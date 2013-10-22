@@ -15,10 +15,15 @@ function Reload-Profile {
     }    
 }
 
+function als { param ($arg)
+gci $arg | ? { $_.PSIsContainer } | % { $d1 += $_.Fullname + ";" }
+$d1.trim(";")
+}
+
 $color_decoration = [ConsoleColor]::DarkGreen
 $color_Host = [ConsoleColor]::Green
 $color_Location = [ConsoleColor]::Cyan
-$host.ui.rawui.WindowSize.Width = "120"
+if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { $host.ui.rawui.WindowSize.Width = "120" }
 
 #add global variable if it doesn't already exist
 if ( !($global:LastCheck) ) {
