@@ -1,6 +1,34 @@
 Add-PSSnapin Quest.ActiveRoles.ADManagement -ErrorAction SilentlyContinue
 #Import-Module ActiveDirectory -ErrorAction SilentlyContinue
 
+[reflection.assembly]::loadwithpartialname("Microsoft.VisualBasic") | Out-Null
+
+function Get-MemberDefinition {param(
+    [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias('Object')]$input,
+    [Parameter(position=1)]$Name
+    )
+    process {
+    if ( $Name ) {
+    ( $input | Get-Member $Name).Definition.Replace("), ", ")`n") } else { ( $input | Get-Member | Out-Default ) }
+    }
+}
+
+Function Search {
+    # Parameters $Path and $SearchString
+    param ([Parameter(Mandatory=$true, ValueFromPipeline = $true)][string]$Path,
+    [Parameter(Mandatory=$true)][string]$SearchString
+    )
+    try {
+    #.NET FindInFiles Method to Look for file
+    # BENEFITS : Possibly running as background job (haven't looked into it yet)
+
+    [Microsoft.VisualBasic.FileIO.FileSystem]::GetFiles(
+    $Path,
+    [Microsoft.VisualBasic.FileIO.SearchOption]::SearchAllSubDirectories,
+    $SearchString )
+    } catch { $_ }
+}
+
 function Reload-Profile {
     @(
         $Profile.AllUsersAllHosts,
@@ -124,4 +152,4 @@ function prompt {
 Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell!"
 Write-Host ""
 Write-Host $systemInfo -ForegroundColor Green
-Write-Host "" 
+Write-Host ""
