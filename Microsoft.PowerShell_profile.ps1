@@ -1,7 +1,54 @@
 Add-PSSnapin Quest.ActiveRoles.ADManagement -ErrorAction SilentlyContinue
 #Import-Module ActiveDirectory -ErrorAction SilentlyContinue
 
+if (Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1x") { . (Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1") }
+
+#region Update
+function Get-WebFile { param( $url,$file )
+
+$proxy = [System.Net.WebRequest]::GetSystemWebProxy()
+$proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials
+
+$request = New-Object System.Net.WebCLient
+$request.UseDefaultCredentials = $true
+$request.Proxy.Credentials = $request.Credentials
+$request.DownloadFile( $url, $file )
+
+}
+ 
+function Update-Profile {
+
+$psProfileFileName = "Microsoft.PowerShell_profile.ps1"
+$psISEProfileFileName = "Microsoft.PowerShellISE_profile.ps1"
+
+$urlPSProfile = "https://raw.githubusercontent.com/ALIENQuake/WindowsPowerShell/master/$psProfileFileName"
+
+$psPersonalPatch = ($env:PSModulePath -split ";" -replace "\\Modules")[0]
+
+$fullPathPSProfile = $psPersonalPatch + "\" + $psProfileFileName
+
+Get-WebFile $urlPSProfile $fullPathPSProfile
+
+Copy-Item -Path $fullPathPSProfile -Destination ($psPersonalPatch + "\" + $psISEProfileFileName) -Force
+
+Reload-Profile
+}
+#endregion
+
+#region File Search
 [reflection.assembly]::loadwithpartialname("Microsoft.VisualBasic") | Out-Null
+Function Search { param (
+    [Parameter(Position=0,Mandatory=$true)][string]$SearchString,
+    [Parameter(Position=1,Mandatory=$true, ValueFromPipeline = $true)][string]$Path
+    )
+    try {
+    # Any exeption will break whole procedure!
+    # .NET FindInFiles Method to Look for file
+    # BENEFITS : Possibly running as background job (haven't looked into it yet)
+    [Microsoft.VisualBasic.FileIO.FileSystem]::GetFiles( $Path,[Microsoft.VisualBasic.FileIO.SearchOption]::SearchAllSubDirectories,$SearchString )
+    } catch { $_ }
+}
+#endregion
 
 function Get-MemberDefinition {param(
     [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias('Object')]$input,
@@ -11,22 +58,6 @@ function Get-MemberDefinition {param(
     if ( $Name ) {
     ( $input | Get-Member $Name).Definition.Replace("), ", ")`n") } else { ( $input | Get-Member | Out-Default ) }
     }
-}
-
-Function Search {
-    # Parameters $Path and $SearchString
-    param ([Parameter(Mandatory=$true, ValueFromPipeline = $true)][string]$Path,
-    [Parameter(Mandatory=$true)][string]$SearchString
-    )
-    try {
-    #.NET FindInFiles Method to Look for file
-    # BENEFITS : Possibly running as background job (haven't looked into it yet)
-
-    [Microsoft.VisualBasic.FileIO.FileSystem]::GetFiles(
-    $Path,
-    [Microsoft.VisualBasic.FileIO.SearchOption]::SearchAllSubDirectories,
-    $SearchString )
-    } catch { $_ }
 }
 
 function Reload-Profile {
