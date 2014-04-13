@@ -2,4 +2,4 @@
 	name = ALIENQuake
 	email = alienquake@hotmail.com
 [core]
-  autocrlf = false
+	autocrlf = false
