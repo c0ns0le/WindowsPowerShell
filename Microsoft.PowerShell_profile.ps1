@@ -1,7 +1,35 @@
-Add-PSSnapin Quest.ActiveRoles.ADManagement -ErrorAction SilentlyContinue
+ï»¿Add-PSSnapin Quest.ActiveRoles.ADManagement -ErrorAction SilentlyContinue
 #Import-Module ActiveDirectory -ErrorAction SilentlyContinue
 
-if (Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1x") { . (Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1") }
+# Check for Administrator elevation
+$isAdmin = (New-Object System.Security.principal.windowsprincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).isInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+ 
+if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1x" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) }
+
+if ($PSVersionTable.PSVersion.Major -ge 3 ) {
+ Write-Host "You are running PowerShell $($PSVersionTable.PSVersion.Major)" -ForegroundColor Green
+ #insert 3.0 specific commands
+ $PSDefaultParameterValues.Add("Format-Table:Autosize",$True)
+}
+
+
+#region Alias
+Set-Alias -Name "wc" -Value "Write-Color"
+Set-Alias -Name "wd" -Value "Write-Debug"
+Set-Alias -Name "we" -Value "Write-Error"
+Set-Alias -Name "wel" -Value "Write-EventLog"
+Set-Alias -Name "wh" -Value "Write-Host"
+Set-Alias -Name "wo" -Value "Write-Output"
+Set-Alias -Name "wp" -Value "Write-Progress"
+Set-Alias -Name "wv" -Value "Write-Verbose"
+Set-Alias -Name "ww" -Value "Write-Warning"
+Set-Alias -Name "od" -Value "Out-Default"
+Set-Alias -Name "of" -Value "Out-File"
+Set-Alias -Name "on" -Value "Out-Null"
+Set-Alias -Name "op" -Value "Out-Printer"
+Set-Alias -Name "os" -Value "Out-String"
+Set-Alias -Name "tp" -Value "Test-Path"
+#endregion
 
 #region Update
 function Get-WebFile { param( $url,$file )
@@ -102,7 +130,7 @@ if ( $min -ge 15 ) {
 $cpu = ( Get-WmiObject -Class win32_processor ).loadpercentage | Select-Object -First 1
 
 $pcount = ( Get-Process ).Count
-$diskinfo = "{0:N2}" -f ( ( $global:cdrive.freespace/1gb )/( $global:cdrive.size/1gb )*100 )
+$diskinfo = "{0:N2}" -f (( $global:cdrive.freespace/1gb )/( $global:cdrive.size/1gb )*100 )
 
 #get uptime
 $time = Get-WmiObject -class Win32_OperatingSystem
@@ -116,19 +144,19 @@ $text = "CPU:{0}% Memory:{6}MB Process:{1} Free C:{2}% {3}{4} {5}" -f $cpu,$pcou
 $systemInfo = [char]0x250c
 $systemInfo += ( [char]0x2500 ).ToString()*$text.length
 $systemInfo += [char]0x2510
-$systemInfo += ”`n”
+$systemInfo += "`n"
 $systemInfo += ( [char]0x2502 )+$text+( [char]0x2502 )
-$systemInfo += ”`n”
+$systemInfo += "`n"
 $systemInfo += [char]0x2514
 $systemInfo += ( [char]0x2500 ).ToString()*$text.length
 $systemInfo += [char]0x2518
 
-if ( !( Test-Path variable:global:userProfile ) ) {
+if ( !( Test-Path variable:global:userProfile )) {
 	$userProfile = $env:USERPROFILE
     Set-Variable -name HOME -value ( (Get-PSProvider FileSystem).Home ) -force
 }
 
-function Shorten-Path ([string]$path) { 
+function Shorten-Path { param( [string]$path )
    $location = $path.Replace( $USERPROFILE, '~' ) 
    # remove prefix for UNC paths 
    $location = $location -replace '^[^:]+::', '' 
@@ -140,8 +168,28 @@ function Shorten-Path ([string]$path) {
    return $location
 }
 
+function Write-Color { param ( $ForegroundColor )
+	# save the current color
+    $fc = $host.UI.RawUI.ForegroundColor
+
+    # set the new color
+    $host.UI.RawUI.ForegroundColor = $ForegroundColor
+
+    # output
+    if ( $args ) { Write-Output $args } else { $input | Write-Output }
+
+    # restore the original color
+    $host.UI.RawUI.ForegroundColor = $fc
+}
+
 function prompt {
-    # Custom color for Windows console
+	# Make sure that Windows and .Net know where we are at all times
+	[Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+
+	# Check Running Jobs
+    $jobsCount = (Get-Job -State Running).Count
+    
+	# Custom color for Windows console
     if ( $Host.Name -eq "ConsoleHost" ) {
         Write-Host $promptString -NoNewline -ForegroundColor Blue
     # Default color for the rest.
@@ -163,6 +211,7 @@ function prompt {
         $title = "{0}{1}{2}{3}{4}{5}{6}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERNAME,"@",$env:computername," | ",$elapsed
     }
     $host.ui.rawui.WindowTitle = $title
+
     write-host "$( ( Get-History -count 1 ).id+1 ) " -n -f yellow
     if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
         write-host $env:USERDNSDOMAIN -n -f $color_Host
@@ -175,7 +224,7 @@ function prompt {
     write-host ( Shorten-Path ( Get-Location ).Path ) -n -f $color_Location
     if ( $NestedPromptLevel -gt 0 ) {
     $myPrompt = ( " " + "+"*$NestedPromptLevel + ">" )
-    $myPrompt 
+    $myPrompt
     } else { write-host " >" -n }
     return " "
 }
