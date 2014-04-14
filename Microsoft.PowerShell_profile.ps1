@@ -7,7 +7,7 @@ $isAdmin = (New-Object System.Security.principal.windowsprincipal([System.Securi
 if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1x" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) }
 
 if ($PSVersionTable.PSVersion.Major -ge 3 ) {
- Write-Host "You are running PowerShell $($PSVersionTable.PSVersion.Major)" -ForegroundColor Green
+ #Write-Host "You are running PowerShell $($PSVersionTable.PSVersion.Major)" -ForegroundColor Green
  #insert 3.0 specific commands
  $PSDefaultParameterValues.Add("Format-Table:Autosize",$True)
 }
@@ -201,9 +201,8 @@ function prompt {
     #Get start time for the current PowerShell session, $pid is a special variable for the current PowerShell process ID.
     [datetime]$psStart = ( get-Process -id $pid ).StartTime
     
-    $ts = ( Get-Date ) - $psStart
     #Strip off the millisecond part with Substring(). The millisecond part will come after the last period.
-    $s = $ts.ToString( )
+    $s = (( Get-Date ) - $psStart).ToString()
     $elapsed = $s.Substring( 0,$s.LastIndexOf( "." )) 
     if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
         $title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERDNSDOMAIN,"\",$env:USERNAME,"@",$env:computername," | ",$elapsed
@@ -212,20 +211,20 @@ function prompt {
     }
     $host.ui.rawui.WindowTitle = $title
 
-    write-host "$( ( Get-History -count 1 ).id+1 ) " -n -f yellow
+    Write-Host "$( ( Get-History -count 1 ).id+1 ) " -n -f yellow
     if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
-        write-host $env:USERDNSDOMAIN -n -f $color_Host
-        write-host "\" -n
+        Write-Host $env:USERDNSDOMAIN -n -f $color_Host
+        Write-Host "\" -n
     }
-    write-host $env:USERNAME -n -f $color_Host
-    write-host "@" -n
-    write-host ( [net.dns]::GetHostName() ) -n -f $color_Host
-    write-host " "-n -f $color_decoration
-    write-host ( Shorten-Path ( Get-Location ).Path ) -n -f $color_Location
+    Write-Host $env:USERNAME -n -f $color_Host
+    Write-Host "@" -n
+    Write-Host ( [net.dns]::GetHostName() ) -n -f $color_Host
+    Write-Host " "-n -f $color_decoration
+    Write-Host ( Shorten-Path ( Get-Location ).Path ) -n -f $color_Location
     if ( $NestedPromptLevel -gt 0 ) {
-    $myPrompt = ( " " + "+"*$NestedPromptLevel + ">" )
+    $myPrompt = ( " " + "+" * $NestedPromptLevel + ">" )
     $myPrompt
-    } else { write-host " >" -n }
+    } else { Write-Host " >" -n }
     return " "
 }
 
