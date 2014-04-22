@@ -6,11 +6,15 @@ $isAdmin = (New-Object System.Security.principal.windowsprincipal([System.Securi
  
 if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1x" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) }
 
-if ($PSVersionTable.PSVersion.Major -ge 3 ) {
- #Write-Host "You are running PowerShell $($PSVersionTable.PSVersion.Major)" -ForegroundColor Green
- #insert 3.0 specific commands
- $PSDefaultParameterValues.Add("Format-Table:Autosize",$True)
+#region Default Parameter Values
+if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
+    if ( $PSDefaultParameterValues.Keys -notmatch  "Format-Table:Autosize" ) {
+    #Write-Host "You are running PowerShell $($PSVersionTable.PSVersion.Major)" -ForegroundColor Green
+    #insert 3.0 specific commands
+    $PSDefaultParameterValues.Add("Format-Table:Autosize",$True)
+    }
 }
+#endregion
 
 
 #region Alias
@@ -32,15 +36,9 @@ Set-Alias -Name "tp" -Value "Test-Path"
 #endregion
 
 #region Update
-function Get-WebFile { param( $url,$file )
+function Get-WebFile { param( $url,$fullPath )
 
-$proxy = [System.Net.WebRequest]::GetSystemWebProxy()
-$proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials
-
-$request = New-Object System.Net.WebCLient
-$request.UseDefaultCredentials = $true
-$request.Proxy.Credentials = $request.Credentials
-$request.DownloadFile( $url, $file )
+Start-BitsTransfer -Source $url -Destination $fullPath
 
 }
  
@@ -57,7 +55,7 @@ $fullPathPSProfile = $psPersonalPatch + "\" + $psProfileFileName
 
 Get-WebFile $urlPSProfile $fullPathPSProfile
 
-Copy-Item -Path $fullPathPSProfile -Destination ($psPersonalPatch + "\" + $psISEProfileFileName) -Force
+Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force
 
 Reload-Profile
 }
