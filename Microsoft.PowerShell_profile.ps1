@@ -1,21 +1,42 @@
-﻿Add-PSSnapin Quest.ActiveRoles.ADManagement -ErrorAction SilentlyContinue
-#Import-Module ActiveDirectory -ErrorAction SilentlyContinue
+﻿#Import-Module ActiveDirectory -ErrorAction SilentlyContinue
+Add-PSSnapin Quest.ActiveRoles.ADManagement -ErrorAction SilentlyContinue
+Import-Module OneGet -ErrorAction SilentlyContinue
+if ( $host.Name -eq "ConsoleHost" ) { Import-Module PSReadline -EA 0 }
+if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) }
 
-# Check for Administrator elevation
-$isAdmin = (New-Object System.Security.principal.windowsprincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).isInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+$isAdmin = ( New-Object System.Security.principal.windowsprincipal( [System.Security.Principal.WindowsIdentity]::GetCurrent() )).isInRole( [System.Security.Principal.WindowsBuiltInRole]::Administrator )
+
+#region Registry
+New-PSDrive -Name HKU  -PSProvider Registry -Root Registry::HKEY_USERS -EA 0 | Out-Null
+New-PSDrive -Name HKCR -PSProvider Registry -Root Registry::HKEY_CLASSES_ROOT -EA 0 | Out-Null
+New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG -EA 0 | Out-Null
+#endregion
+
+#region Script Browser
+#Script Browser Begin
+if ( $Host.Name -ne "ConsoleHost" ) {
+    if ( Test-Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\ScriptBrowser.dll" ) {
+    Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\System.Windows.Interactivity.dll"
+    Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\ScriptBrowser.dll"
+    Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\BestPractices.dll"
+    if ( $psISE.CurrentPowerShellTab.VerticalAddOnTools.Name -notcontains "Script Browser" ) {
+        $scriptBrowser = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Browser", [ScriptExplorer.Views.MainView], $true ) }
+    if ( $psISE.CurrentPowerShellTab.VerticalAddOnTools.Name -notcontains "Script Analyzer" ) {
+        $scriptAnalyzer = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Analyzer", [BestPractices.Views.BestPracticesView], $true ) }
+    $psISE.CurrentPowerShellTab.VisibleVerticalAddOnTools.SelectedAddOnTool = $scriptBrowser
+}
+#Script Browser End
+}
+#endregion
  
-if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1x" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) }
-
-#region Default Parameter Values
+#region Powershell 3 and above specific commands
 if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
-    if ( $PSDefaultParameterValues.Keys -notmatch  "Format-Table:Autosize" ) {
-    #Write-Host "You are running PowerShell $($PSVersionTable.PSVersion.Major)" -ForegroundColor Green
-    #insert 3.0 specific commands
-    $PSDefaultParameterValues.Add("Format-Table:Autosize",$True)
+    if ( $PSDefaultParameterValues.Keys -notcontains "Format-Table:Autosize" ) {
+    #insert Default Parameter Values for every command
+    $PSDefaultParameterValues.Add( "Format-Table:Autosize",$True )
     }
 }
 #endregion
-
 
 #region Alias
 Set-Alias -Name "wc" -Value "Write-Color"
@@ -32,16 +53,133 @@ Set-Alias -Name "of" -Value "Out-File"
 Set-Alias -Name "on" -Value "Out-Null"
 Set-Alias -Name "op" -Value "Out-Printer"
 Set-Alias -Name "os" -Value "Out-String"
-Set-Alias -Name "tp" -Value "Test-Path"
+Set-Alias -Name "tc" -Value "Test-xConnection"
+Set-Alias -Name "cn" -Value "Get-ComputerName"
+Set-Alias -Name "hn" -Value "Get-ComputerName"
+Set-Alias -Name "up" -Value "Update-Profile"
+Set-Alias -Name "igui" -Value "Install-GUI"
+
+Set-Alias -Name "hostname" -Value "Prevent-CMDCommands"
+Set-Alias -Name "ping" -Value "Prevent-CMDCommands"
 #endregion
 
-#region Update
-function Get-WebFile { param( $url,$fullPath )
-
-Start-BitsTransfer -Source $url -Destination $fullPath
-
+#region Custom Functions
+function als { param ( $arg )
+gci $arg | ? { $_.PSIsContainer } | % { $sdata += $_.Fullname + ";" }
+$sdata.trim( ";" )
 }
- 
+
+function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yellow }
+
+#For the upcoming WMF 5.0 OneGet feature, hell yee!
+function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose }
+
+function Get-MemberDefinition { param(
+    [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias("Object")]$input,
+    [Parameter(position=1)]$Name
+    )
+    process {
+    if ( $Name ) {
+    ( $input | Get-Member $Name ).Definition.Replace("), ", ")`n" ) } else { ( $input | Get-Member | Out-Default ) }
+    }
+}
+
+function Get-RegistryChildItem { param( $arg )
+$hive = ((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[0]
+$partialpath = ((( $arg -replace "\[" ) -replace "\]" ) -split("\\",2 ))[-1]
+switch ( $hive ) {
+"HKEY_CURRENT_USER" { $hive = "HKCU" }
+"HKEY_LOCAL_MACHINE" { $hive = "HKLM" }
+"HKEY_USERS" { $hive = "HKU" }
+"HKEY_CURRENT_CONFIG" { $hive = "HKCC" }
+"HKEY_CLASSES_ROOT" { $hive = "HKCR" }
+}
+Get-ChildItem -Path ( $hive + ":\" + $partialpath ) -Recurse
+}
+
+function Get-RegistryItemProperty { param( $arg )
+$hive = (((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[0])
+$itemName = ((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[-1]
+$partialpath = (((( $arg -replace "\[" ) -replace "\]" ) -split( "\\",2 ))[-1] ) -replace $itemName
+switch ( $hive ) {
+    "HKEY_CURRENT_USER" { $hive = "HKCU" }
+    "HKEY_LOCAL_MACHINE" { $hive = "HKLM" }
+    "HKEY_USERS" { $hive = "HKU" }
+    "HKEY_CURRENT_CONFIG" { $hive = "HKCC" }
+    "HKEY_CLASSES_ROOT" { $hive = "HKCR" }
+}
+Get-ItemProperty -Path ( $hive + ":\" + $partialpath ) -Name $itemName | Select-Object -Property $itemName
+}
+
+function Prevent-CMDCommands { 
+$cmdError = "Using old Command Prompt commands in Powershell is no longer tolerated."
+Write-Error $cmdError
+switch ( $^ ) {
+"cd" { Write-Host "Use Set-Location instead!" }
+"hostname" { Write-Host "Use $env:COMPUTERNAME instead!" }
+"ping" { Write-Host "Use Test-Connection instead!" }
+}
+}
+
+function shell: { param([Parameter(Position=1)]$Name,[Parameter(Position=2)][switch]$ListAvailable)
+if ( $ListAvailable -or !$Name ) { ( Get-ItemProperty -LiteralPath (( Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\FolderDescriptions ).PSPath )).Name | Sort-Object }
+if ( $Name ) { explorer.exe "shell:$Name" }
+}
+
+Function Search-File { param (
+    [Parameter(Position=0,Mandatory=$true)][string]$SearchString,
+    [Parameter(Position=1,Mandatory=$true, ValueFromPipeline = $true)][string]$Path
+    )
+    try {
+    [reflection.assembly]::loadwithpartialname( "Microsoft.VisualBasic" ) | Out-Null
+    # Any exeption will break whole procedure!
+    # .NET FindInFiles Method to Look for file
+    # BENEFITS : Possibly running as background job (haven't looked into it yet)
+    [Microsoft.VisualBasic.FileIO.FileSystem]::GetFiles( $Path,[Microsoft.VisualBasic.FileIO.SearchOption]::SearchAllSubDirectories,$SearchString )
+    } catch { $_ }
+}
+
+function Test-xConnection { param( [Parameter(Position=1,ValueFromPipeline=$true)]$args )
+Write-Host "Using Test-xConnection, improved Test-Connection function."
+$destination = ( Get-WmiObject Win32_PingStatus -Filter "Address=`"$args`" AND ResolveAddressNames=$true" ).ProtocolAddressResolved
+Test-Connection -ComputerName $args -Count 1 | Select-Object @{ Name = "Source";Expression = { $_.PSComputerName } },@{ Name = "Destination";Expression = { $destination } },IPV4Address,IPV6Address,@{ Name = "Bytes";Expression = { $_.BufferSize } },@{ Name = "Time(ms)";Expression = { $_.ResponseTime } } | FT -AutoSize
+}
+
+function Write-Color { param ( $ForegroundColor )
+	# save the current color
+    $fc = $host.UI.RawUI.ForegroundColor
+
+    # set the new color
+    $host.UI.RawUI.ForegroundColor = $ForegroundColor
+
+    # output
+    if ( $args ) { Write-Output $args } else { $input | Write-Output }
+
+    # restore the original color
+    $host.UI.RawUI.ForegroundColor = $fc
+}
+#endregion
+
+#region Update-Profile
+function Get-WebFile { param( $url,$fullPath )
+$reg = ( Get-Item -Path "hkcu:Software\Microsoft\Windows\CurrentVersion\Internet Settings" ).property | ? { $_ -eq "ProxyServer" }
+$is = Get-ItemProperty -path "hkcu:Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name AutoConfigURL -EA 0
+if ( $is ) {
+    try { Start-BitsTransfer -Source $url -Destination $fullPath -EA 1 }
+    catch [System.Management.Automation.ActionPreferenceStopException] {
+        try { throw $_ }
+        catch {
+        $Credentials = Get-Credential
+        Start-BitsTransfer -Source $url -Destination $fullPath -ProxyUsage SystemDefault -ProxyAuthentication Basic -ProxyCredential $Credentials | Out-Null
+        }
+    }
+} elseif ( ($reg -eq $null) -and ($env:USERDNSDOMAIN -ne $null )) {
+    $proxy = "http=proxy.$($env:USERDNSDOMAIN):8080"
+    Set-ItemProperty -path "hkcu:Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name ProxyEnable -Type DWORD -Value 1
+    Set-ItemProperty -path "hkcu:Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name ProxyServer -Type String -Value $proxy | Out-Null
+    } else { Start-BitsTransfer -Source $url -Destination $fullPath | Out-Null }
+}
+
 function Update-Profile {
 
 $psProfileFileName = "Microsoft.PowerShell_profile.ps1"
@@ -49,62 +187,33 @@ $psISEProfileFileName = "Microsoft.PowerShellISE_profile.ps1"
 
 $urlPSProfile = "https://raw.githubusercontent.com/ALIENQuake/WindowsPowerShell/master/$psProfileFileName"
 
-$psPersonalPatch = ($env:PSModulePath -split ";" -replace "\\Modules")[0]
+$psPersonalPatch = [Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerShell\"
 
-$fullPathPSProfile = $psPersonalPatch + "\" + $psProfileFileName
+$fullPathPSProfile = $psPersonalPatch + $psProfileFileName
 
 Get-WebFile $urlPSProfile $fullPathPSProfile
 
-Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force
+Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force | Out-Null
 
 Reload-Profile
 }
-#endregion
-
-#region File Search
-[reflection.assembly]::loadwithpartialname("Microsoft.VisualBasic") | Out-Null
-Function Search { param (
-    [Parameter(Position=0,Mandatory=$true)][string]$SearchString,
-    [Parameter(Position=1,Mandatory=$true, ValueFromPipeline = $true)][string]$Path
-    )
-    try {
-    # Any exeption will break whole procedure!
-    # .NET FindInFiles Method to Look for file
-    # BENEFITS : Possibly running as background job (haven't looked into it yet)
-    [Microsoft.VisualBasic.FileIO.FileSystem]::GetFiles( $Path,[Microsoft.VisualBasic.FileIO.SearchOption]::SearchAllSubDirectories,$SearchString )
-    } catch { $_ }
-}
-#endregion
-
-function Get-MemberDefinition {param(
-    [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias('Object')]$input,
-    [Parameter(position=1)]$Name
-    )
-    process {
-    if ( $Name ) {
-    ( $input | Get-Member $Name).Definition.Replace("), ", ")`n") } else { ( $input | Get-Member | Out-Default ) }
-    }
-}
 
 function Reload-Profile {
-    @(
+		@(
         $Profile.AllUsersAllHosts,
         $Profile.AllUsersCurrentHost,
         $Profile.CurrentUserAllHosts,
         $Profile.CurrentUserCurrentHost
     ) | % {
-        if(Test-Path $_){
+        if ( Test-Path $_ ) {
             Write-Verbose "Running $_"
-            . $_
+            . $_ | Out-Null
         }
-    }    
+    }
 }
+#endregion
 
-function als { param ($arg)
-gci $arg | ? { $_.PSIsContainer } | % { $d1 += $_.Fullname + ";" }
-$d1.trim(";")
-}
-
+#region Info
 $color_decoration = [ConsoleColor]::DarkGreen
 $color_Host = [ConsoleColor]::Green
 $color_Location = [ConsoleColor]::Cyan
@@ -149,40 +258,23 @@ $systemInfo += [char]0x2514
 $systemInfo += ( [char]0x2500 ).ToString()*$text.length
 $systemInfo += [char]0x2518
 
-if ( !( Test-Path variable:global:userProfile )) {
-	$userProfile = $env:USERPROFILE
-    Set-Variable -name HOME -value ( (Get-PSProvider FileSystem).Home ) -force
-}
+#endregion
 
+#region Powershell Prompt
 function Shorten-Path { param( [string]$path )
-   $location = $path.Replace( $USERPROFILE, '~' ) 
+   $location = $path.Replace( $env:USERPROFILE, "~" ) 
    # remove prefix for UNC paths 
-   $location = $location -replace '^[^:]+::', '' 
+   $location = $location -replace "^[^:]+::"
    # make path shorter like tabs in Vim,
    # handle paths starting with \\ and . correctly
-   # return ( $location -replace '\\( \.? )( [^\\] )[^\\]*( ?=\\ )','\$1$2' )
-
+   # return ( $location -replace "\\( \.? )( [^\\] )[^\\]*( ?=\\ )","\$1$2" )
    # return standard location 
    return $location
 }
 
-function Write-Color { param ( $ForegroundColor )
-	# save the current color
-    $fc = $host.UI.RawUI.ForegroundColor
-
-    # set the new color
-    $host.UI.RawUI.ForegroundColor = $ForegroundColor
-
-    # output
-    if ( $args ) { Write-Output $args } else { $input | Write-Output }
-
-    # restore the original color
-    $host.UI.RawUI.ForegroundColor = $fc
-}
-
 function prompt {
 	# Make sure that Windows and .Net know where we are at all times
-	[Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+	[Environment]::CurrentDirectory = ( Get-Location -PSProvider FileSystem ).ProviderPath
 
 	# Check Running Jobs
     $jobsCount = (Get-Job -State Running).Count
@@ -225,8 +317,8 @@ function prompt {
     } else { Write-Host " >" -n }
     return " "
 }
+#endregion
 
-Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell!"
-Write-Host ""
+Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell - it's not a shell of you grandpa!"
 Write-Host $systemInfo -ForegroundColor Green
 Write-Host ""
