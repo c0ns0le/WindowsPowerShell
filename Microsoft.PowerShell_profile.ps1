@@ -173,8 +173,8 @@ if ( $is ) {
         Start-BitsTransfer -Source $url -Destination $fullPath -ProxyUsage SystemDefault -ProxyAuthentication Basic -ProxyCredential $Credentials | Out-Null
         }
     }
-} elseif ( ($reg -eq $null) -and ($env:USERDNSDOMAIN -ne $null )) {
-    $proxy = "http=proxy.$($env:USERDNSDOMAIN):8080"
+} elseif (( $reg -eq $null ) -and ( $env:USERDNSDOMAIN -ne $null )) {
+    $proxy = ( "http=proxy.$($env:USERDNSDOMAIN):8080" -replace "schul","prod" ) -replace "test","prod"
     Set-ItemProperty -path "hkcu:Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name ProxyEnable -Type DWORD -Value 1
     Set-ItemProperty -path "hkcu:Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name ProxyServer -Type String -Value $proxy | Out-Null
     } else { Start-BitsTransfer -Source $url -Destination $fullPath | Out-Null }
