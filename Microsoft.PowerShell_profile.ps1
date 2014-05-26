@@ -74,6 +74,12 @@ function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yello
 #For the upcoming WMF 5.0 OneGet feature, hell yee!
 function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose }
 
+function Get-ADAcl {param([string]$name)
+Push-Location ad:
+(Get-Acl (Get-QADObject $name).DN).access | Select identityreference -Unique | FT -AutoSize
+Pop-Location
+}
+
 function Get-MemberDefinition { param(
     [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias("Object")]$input,
     [Parameter(position=1)]$Name
