@@ -91,7 +91,7 @@ function Get-MemberDefinition { param(
 }
 
 function Get-RegistryChildItem { param( $arg )
-$hive = ((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[0]
+$hive = ((( $arg -replace "\[" ) -replace "\]" ) -replace ":" -split "\\" )[0]
 $partialpath = ((( $arg -replace "\[" ) -replace "\]" ) -split("\\",2 ))[-1]
 switch ( $hive ) {
 "HKEY_CURRENT_USER" { $hive = "HKCU" }
@@ -104,7 +104,7 @@ Get-ChildItem -Path ( $hive + ":\" + $partialpath ) -Recurse
 }
 
 function Get-RegistryItemProperty { param( $arg )
-$hive = (((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[0])
+$hive = ((( $arg -replace "\[" ) -replace "\]" ) -replace ":" -split "\\" )[0]
 $itemName = ((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[-1]
 $partialpath = (((( $arg -replace "\[" ) -replace "\]" ) -split( "\\",2 ))[-1] ) -replace $itemName
 switch ( $hive ) {
