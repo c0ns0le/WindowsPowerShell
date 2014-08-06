@@ -35,6 +35,9 @@ if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
     #insert Default Parameter Values for every command
     $PSDefaultParameterValues.Add( "Format-Table:Autosize",$True )
     }
+    if ( $PSDefaultParameterValues.Keys -notcontains "Export-Csv:NoTypeInformation" ) {
+    $PSDefaultParameterValues.Add( "Export-Csv:NoTypeInformation",$True )
+    }
 }
 #endregion
 
