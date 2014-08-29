@@ -74,13 +74,29 @@ $sdata.trim( ";" )
 
 function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yellow }
 
-#For the upcoming WMF 5.0 OneGet feature, hell yee!
-function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose }
-
 function Get-ADAcl {param([string]$name)
 Push-Location ad:
 (Get-Acl (Get-QADObject $name).DN).access | Select identityreference -Unique | FT -AutoSize
 Pop-Location
+}
+
+function Get-IPConfig {
+<#
+.SYNOPSIS
+PowerShell function to encase Microsoft's IPConfig
+.DESCRIPTION
+Includes parameters to filter MAC and IPv4 and IPv6 addresses
+.EXAMPLE 
+Get-IPConfig -MAC
+#> 
+[cmdletbinding()]Param([Switch]$IP,[Switch]$Mac,[Switch]$All)
+Process {
+    If($Mac) { IPConfig -all | Select-String "Physical" }
+    ElseIf($IP) { IPConfig -all | Select-String "IPv" } 
+    ElseIf($All) { IPConfig -all }
+    Else { IPConfig }
+    }
+End { "`n " + (Get-Date).DateTime }
 }
 
 function Get-MemberDefinition { param(
@@ -119,6 +135,9 @@ switch ( $hive ) {
 }
 Get-ItemProperty -Path ( $hive + ":\" + $partialpath ) -Name $itemName | Select-Object -Property $itemName
 }
+
+#For the upcoming WMF 5.0 OneGet feature, hell yee!
+function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose }
 
 Function New-SymLink {
     <#
