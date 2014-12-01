@@ -1,4 +1,4 @@
-*.ps1	 diff=text
+*.ps1 diff
 
 # Custom for Visual Studio
 *.cs     diff=csharp
@@ -13,8 +13,6 @@
 *.DOC	 diff=astextplain
 *.docx diff=astextplain
 *.DOCX diff=astextplain
-*.dot  diff=astextplain
-*.DOT  diff=astextplain
 *.pdf  diff=astextplain
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain

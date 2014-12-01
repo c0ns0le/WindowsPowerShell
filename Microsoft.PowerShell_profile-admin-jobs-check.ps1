@@ -1,4 +1,4 @@
-function Reload-Profile {
+﻿function Reload-Profile {
     @(
         $Profile.AllUsersAllHosts,
         $Profile.AllUsersCurrentHost,
