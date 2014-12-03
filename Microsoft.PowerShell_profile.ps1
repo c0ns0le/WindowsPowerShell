@@ -83,60 +83,10 @@ $sdata.trim( ";" )
 function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yellow }
 
 function Get-EnvironmentFolderPath { param( [switch]$AdminTools,[switch]$ApplicationData,[switch]$CDBurning,[switch]$CommonAdminTools,[switch]$CommonApplicationData,[switch]$CommonDesktopDirectory,[switch]$CommonDocuments,[switch]$CommonMusic,[switch]$CommonOemLinks,[switch]$CommonPictures,[switch]$CommonProgramFiles,[switch]$CommonProgramFilesX86,[switch]$CommonPrograms,[switch]$CommonStartMenu,[switch]$CommonStartup,[switch]$CommonTemplates,[switch]$CommonVideos,[switch]$Cookies,[switch]$Desktop,[switch]$DesktopDirectory,[switch]$Favorites,[switch]$Fonts,[switch]$History,[switch]$InternetCache,[switch]$LocalApplicationData,[switch]$LocalizedResources,[switch]$MyComputer,[switch]$MyDocuments,[switch]$MyMusic,[switch]$MyPictures,[switch]$MyVideos,[switch]$NetworkShortcuts,[switch]$Personal,[switch]$PrinterShortcuts,[switch]$ProgramFiles,[switch]$ProgramFilesX86,[switch]$Programs,[switch]$Recent,[switch]$Resources,[switch]$SendTo,[switch]$StartMenu,[switch]$Startup,[switch]$System,[switch]$SystemX86,[switch]$Templates,[switch]$UserProfile,[switch]$Windows )
-if ( $AdminTools ) { [environment]::getfolderpath("AdminTools") }
-if ( $ApplicationData ) { [environment]::getfolderpath("ApplicationData") }
-if ( $CDBurning ) { [environment]::getfolderpath("CDBurning") }
-if ( $CommonAdminTools ) { [environment]::getfolderpath("CommonAdminTools") }
-if ( $CommonApplicationData ) { [environment]::getfolderpath("CommonApplicationData") }
-if ( $CommonDesktopDirectory ) { [environment]::getfolderpath("CommonDesktopDirectory") }
-if ( $CommonDocuments ) { [environment]::getfolderpath("CommonDocuments") }
-if ( $CommonMusic ) { [environment]::getfolderpath("CommonMusic") }
-if ( $CommonOemLinks ) { [environment]::getfolderpath("CommonOemLinks") }
-if ( $CommonPictures ) { [environment]::getfolderpath("CommonPictures") }
-if ( $CommonProgramFiles ) { [environment]::getfolderpath("CommonProgramFiles") }
-if ( $CommonProgramFilesX86 ) { [environment]::getfolderpath("CommonProgramFilesX86") }
-if ( $CommonPrograms ) { [environment]::getfolderpath("CommonPrograms") }
-if ( $CommonStartMenu ) { [environment]::getfolderpath("CommonStartMenu") }
-if ( $CommonStartup ) { [environment]::getfolderpath("CommonStartup") }
-if ( $CommonTemplates ) { [environment]::getfolderpath("CommonTemplates") }
-if ( $CommonVideos ) { [environment]::getfolderpath("CommonVideos") }
-if ( $Cookies ) { [environment]::getfolderpath("Cookies") }
-if ( $Desktop ) { [environment]::getfolderpath("Desktop") }
-if ( $DesktopDirectory ) { [environment]::getfolderpath("DesktopDirectory") }
-if ( $Favorites ) { [environment]::getfolderpath("Favorites") }
-if ( $Fonts ) { [environment]::getfolderpath("Fonts") }
-if ( $History ) { [environment]::getfolderpath("History") }
-if ( $InternetCache ) { [environment]::getfolderpath("InternetCache") }
-if ( $LocalApplicationData ) { [environment]::getfolderpath("LocalApplicationData") }
-if ( $LocalizedResources ) { [environment]::getfolderpath("LocalizedResources") }
-if ( $MyComputer ) { [environment]::getfolderpath("MyComputer") }
-if ( $MyDocuments ) { [environment]::getfolderpath("MyDocuments") }
-if ( $MyMusic ) { [environment]::getfolderpath("MyMusic") }
-if ( $MyPictures ) { [environment]::getfolderpath("MyPictures") }
-if ( $MyVideos ) { [environment]::getfolderpath("MyVideos") }
-if ( $NetworkShortcuts ) { [environment]::getfolderpath("NetworkShortcuts") }
-if ( $Personal ) { [environment]::getfolderpath("Personal") }
-if ( $PrinterShortcuts ) { [environment]::getfolderpath("PrinterShortcuts") }
-if ( $ProgramFiles ) { [environment]::getfolderpath("ProgramFiles") }
-if ( $ProgramFilesX86 ) { [environment]::getfolderpath("ProgramFilesX86") }
-if ( $Programs ) { [environment]::getfolderpath("Programs") }
-if ( $Recent ) { [environment]::getfolderpath("Recent") }
-if ( $Resources ) { [environment]::getfolderpath("Resources") }
-if ( $SendTo ) { [environment]::getfolderpath("SendTo") }
-if ( $StartMenu ) { [environment]::getfolderpath("StartMenu") }
-if ( $Startup ) { [environment]::getfolderpath("Startup") }
-if ( $System ) { [environment]::getfolderpath("System") }
-if ( $SystemX86 ) { [environment]::getfolderpath("SystemX86") }
-if ( $Templates ) { [environment]::getfolderpath("Templates") }
-if ( $Windows ) { [environment]::getfolderpath("Windows") }
-if ( $SendTo ) { [environment]::getfolderpath("SendTo") }
-if ( $StartMenu ) { [environment]::getfolderpath("StartMenu") }
-if ( $Startup ) { [environment]::getfolderpath("Startup") }
-if ( $System ) { [environment]::getfolderpath("System") }
-if ( $SystemX86 ) { [environment]::getfolderpath("SystemX86") }
-if ( $Templates ) { [environment]::getfolderpath("Templates") }
-if ( $UserProfile ) { [environment]::getfolderpath("UserProfile") }
-if ( $Windows ) { [environment]::getfolderpath("Windows") }
+[array]$params = $PsBoundParameters | % { $_.keys }
+$ErrorActionPreference = "silentlycontinue"
+$params | % { [environment]::getfolderpath("$_") }
+$ErrorActionPreference = "continue"
 }
 
 function Get-IPConfig { param( [Switch]$IP, [Switch]$Mac, [Switch]$All )
