@@ -113,7 +113,7 @@ End { "`r`n" + ( Get-Date ).DateTime }
 }
 
 function Get-MemberDefinition { param(
-	[Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias("Object")]$input,
+	[Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias("Object")]$InputObject,
     [Parameter(position=1)]$Name )
 
 process {
@@ -132,7 +132,8 @@ switch ( $hive ) {
 	"HKEY_CURRENT_CONFIG" { $hive = "HKCC" }
 	"HKEY_CLASSES_ROOT" { $hive = "HKCR" }
 }
-Get-ChildItem -Path ( $hive + ":\" + $partialpath ) -Recurse
+Get-Item ( $hive + ":\" + $partialpath )
+Get-ChildItem -Path ( $hive + ":\" + $partialpath ) -Recurse | % { Get-Item (( $hive + ":\" + $partialpath ) + "\\" + (( $_.Name -split "\\" )[-1]))  }
 }
 
 function Get-RegistryItemProperty { param( $arg )
