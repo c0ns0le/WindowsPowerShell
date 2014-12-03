@@ -82,12 +82,25 @@ $sdata.trim( ";" )
 
 function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yellow }
 
-function global:Get-EnvironmentFolderPath { param( [switch]$AdminTools,[switch]$ApplicationData,[switch]$CDBurning,[switch]$CommonAdminTools,[switch]$CommonApplicationData,[switch]$CommonDesktopDirectory,[switch]$CommonDocuments,[switch]$CommonMusic,[switch]$CommonOemLinks,[switch]$CommonPictures,[switch]$CommonProgramFiles,[switch]$CommonProgramFilesX86,[switch]$CommonPrograms,[switch]$CommonStartMenu,[switch]$CommonStartup,[switch]$CommonTemplates,[switch]$CommonVideos,[switch]$Cookies,[switch]$Desktop,[switch]$DesktopDirectory,[switch]$Favorites,[switch]$Fonts,[switch]$History,[switch]$InternetCache,[switch]$LocalApplicationData,[switch]$LocalizedResources,[switch]$MyComputer,[switch]$MyDocuments,[switch]$MyMusic,[switch]$MyPictures,[switch]$MyVideos,[switch]$NetworkShortcuts,[switch]$Personal,[switch]$PrinterShortcuts,[switch]$ProgramFiles,[switch]$ProgramFilesX86,[switch]$Programs,[switch]$Recent,[switch]$Resources,[switch]$SendTo,[switch]$StartMenu,[switch]$Startup,[switch]$System,[switch]$SystemX86,[switch]$Templates,[switch]$UserProfile,[switch]$Windows )
+function Create-Get-EnvironmentFolderPath {
+$ErrorActionPreference = "silentlycontinue"
+[environment]::getfolderpath("")
+$switches = "param( [switch]$" + ((($Error[0].ToString() -split('names: ') -split('. Use '))[1] ) -replace "\s+" ).replace(",",',[switch]$') + " `)"
+$ErrorActionPreference = "continue"
+
+$dataFunctionCode = @'
+
 [array]$params = $PsBoundParameters | % { $_.keys }
 $ErrorActionPreference = "silentlycontinue"
 $params | % { [environment]::getfolderpath("$_") }
 $ErrorActionPreference = "continue"
+'@
+
+$dataFunctionCode = $switches + $dataFunctionCode
+New-Item -Path Function: -Name global:Get-EnvironmentFolderPath -Value $dataFunctionCode | Out-Null
+Remove-Item -Path Function:Create-Get-EnvironmentFolderPath
 }
+Create-Get-EnvironmentFolderPath
 
 function Get-IPConfig { param( [Switch]$IP, [Switch]$Mac, [Switch]$All )
 Process {
