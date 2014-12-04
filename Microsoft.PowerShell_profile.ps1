@@ -327,7 +327,6 @@ function Test-xConnection { param(
 [switch]$t,
 [switch]$Detailed
 )
-#Write-Host "Using Test-xConnection, improved Test-Connection function."
 if ( $t ) { $Count=999999999 }
 $destination = ( Get-WmiObject Win32_PingStatus -Filter "Address=`"$ComputerName`" AND ResolveAddressNames=$true" ).ProtocolAddressResolved
 
@@ -341,13 +340,10 @@ Test-Connection -ComputerName $ComputerName -Count $Count | Select-Object @{ Nam
 function Write-Color { param ( $ForegroundColor )
 	# save the current color
     $fc = $host.UI.RawUI.ForegroundColor
-
     # set the new color
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
-
     # output
     if ( $args ) { Write-Output $args } else { $input | Write-Output }
-
     # restore the original color
     $host.UI.RawUI.ForegroundColor = $fc
 }
@@ -389,6 +385,12 @@ Get-WebFile $urlPSProfile $fullPathPSProfile
 Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force | Out-Null
 
 Reload-Profile
+}
+
+function Deploy-Profile {
+#get all ad servers
+#read powershell profile to memmory
+#copy/overwrite powershell profile for each server
 }
 
 function Reload-Profile {
