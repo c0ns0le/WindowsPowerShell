@@ -62,10 +62,15 @@ Set-Alias -Name "tc" -Value "Test-xConnection"
 Set-Alias -Name "cn" -Value "Get-ComputerName"
 Set-Alias -Name "hn" -Value "Get-ComputerName"
 Set-Alias -Name "up" -Value "Update-Profile"
-Set-Alias -Name "igui" -Value "Install-GUI"
 
-Set-Alias -Name "hostname" -Value "Prevent-CMDCommands"
+Set-Alias -Name "igui" -Value "Install-GUI"
+Set-Alias -Name "rvdn" -Value "Resolve-DnsName"
+
+if ( Get-Command Resolve-DnsName -EA 0 ) { Set-Alias -Name "nslookup" -Value "Prevent-CMDCommands" }
+
 Set-Alias -Name "ping" -Value "Prevent-CMDCommands"
+Set-Alias -Name "hostname" -Value "Prevent-CMDCommands"
+
 #endregion
 
 #region Custom Functions
@@ -288,7 +293,8 @@ function Prevent-CMDCommands {
 	$cmdError = "Using old CMD/DOS commands in Powershell is no longer tolerated because Powershell it's not a shell of you grandpa!"
 	switch ( $^ ) {
 	"cd" { Write-Host "Use Set-Location instead!" }
-	"hostname" { Write-Host "Use $env:COMPUTERNAME instead!" }
+	"hostname" { Write-Host 'Use $env:COMPUTERNAME instead!' }
+    "nslookup" { Write-Host "Use Resolve-DnsName instead!" }
 	"ping" { Write-Host "Use Test-Connection instead!" }
 	}
 	Write-Error $cmdError
