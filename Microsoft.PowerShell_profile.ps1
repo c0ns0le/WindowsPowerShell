@@ -395,9 +395,19 @@ Reload-Profile
 }
 
 function Deploy-Profile {
-#get all ad servers
-#read powershell profile to memmory
-#copy/overwrite powershell profile for each server
+[array]$adComputers = (Get-QADComputer).Name
+if ( !$adComputers ) { Import-Module ActiveDirectory -EA 0 }
+if ( $adComputers ) {
+
+    $adComputers | % {
+    $ComputerName = $_
+
+        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" ) {
+        $profileData = $profile.CurrentUserCurrentHost
+            $profileData | Copy-Item "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell"
+        }
+    }
+}
 }
 
 function Reload-Profile {
