@@ -1,12 +1,11 @@
 ﻿#Import-Module ActiveDirectory -EA 0
 Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
+Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml"
 Import-Module OneGet -EA 0
 if ( $host.Name -eq "ConsoleHost" ) { Import-Module PSReadline -EA 0 }
 if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" )
-Import-Module posh-git
-Start-SshAgent -Quiet
+    Import-Module posh-git ; Start-SshAgent -Quiet
 }
-$isAdmin = ( New-Object System.Security.principal.windowsprincipal( [System.Security.Principal.WindowsIdentity]::GetCurrent() )).isInRole( [System.Security.Principal.WindowsBuiltInRole]::Administrator )
 
 #region Registry
 New-PSDrive -Name HKU  -PSProvider Registry -Root Registry::HKEY_USERS -EA 0 | Out-Null
@@ -14,9 +13,8 @@ New-PSDrive -Name HKCR -PSProvider Registry -Root Registry::HKEY_CLASSES_ROOT -E
 New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG -EA 0 | Out-Null
 #endregion
 
-#region Script Browser
-#Script Browser Begin
-if ( $Host.Name -ne "ConsoleHost" ) {
+#region Script Browser Begin
+if ( $Host.Name -eq "Windows PowerShell ISE Host" ) {
     if ( Test-Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\ScriptBrowser.dll" ) {
     Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\System.Windows.Interactivity.dll"
     Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\ScriptBrowser.dll"
@@ -27,9 +25,9 @@ if ( $Host.Name -ne "ConsoleHost" ) {
         $scriptAnalyzer = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Analyzer", [BestPractices.Views.BestPracticesView], $true ) }
     $psISE.CurrentPowerShellTab.VisibleVerticalAddOnTools.SelectedAddOnTool = $scriptBrowser
 }
-#Script Browser End
+
 }
-#endregion
+#endregion Script Browser End
  
 #region Powershell 3 and above specific commands
 if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
@@ -44,6 +42,7 @@ if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
 #endregion
 
 #region Alias
+Set-Alias -Name "im" -Value "Import-Module"
 Set-Alias -Name "wc" -Value "Write-Color"
 Set-Alias -Name "wd" -Value "Write-Debug"
 Set-Alias -Name "we" -Value "Write-Error"
@@ -125,6 +124,11 @@ process {
     if ( $Name ) { ( $input | Get-Member $Name ).Definition.Replace("), ", ")`n" )
 	} else { ( $input | Get-Member | Out-Default ) }
     }
+}
+
+function Get-QCommand {
+	if ($args[0] -eq $null)	{ Get-Command -PSSnapin Quest.ActiveRoles*
+    } else { Get-Command $args[0] | Where-Object { $_.PSSnapIn -like 'Quest.ActiveRoles*' } }
 }
 
 function Get-RegistryChildItem { param( $arg )
