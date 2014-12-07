@@ -291,7 +291,10 @@ Process {
 }
  }
 
-function New-UniverseMode { New-Item -ItemType Directory -Path ( [Environment]::GetFolderPath("Desktop") + "\" + "Universe Mode.{ED7BA470-8E54-465E-825C-99712043E01C}" ) }
+function New-UniverseMode {
+    $path = [Environment]::GetFolderPath("Desktop") + "\" + "Universe Mode.{ED7BA470-8E54-465E-825C-99712043E01C}"
+    New-Item -ItemType Directory -Path $path
+}
 
 function Prevent-CMDCommands {
 	$cmdError = "Using old CMD/DOS commands in Powershell is no longer tolerated because Powershell it's not a shell of you grandpa!"
@@ -523,3 +526,4 @@ function global:prompt {
 Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell - it's not a shell of you grandpa!"
 Write-Host $systemInfo -ForegroundColor Green
 Write-Host ""
+Set-Location ([environment]::getfolderpath("UserProfile"))
