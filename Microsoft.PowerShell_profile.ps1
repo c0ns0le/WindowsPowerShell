@@ -1,6 +1,6 @@
 ﻿#Import-Module ActiveDirectory -EA 0
 Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
-Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml"
+if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
 Import-Module OneGet -EA 0
 if ( $host.Name -eq "ConsoleHost" ) { Import-Module PSReadline -EA 0 }
 if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" )
