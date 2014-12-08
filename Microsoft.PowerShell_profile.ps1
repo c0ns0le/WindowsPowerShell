@@ -399,11 +399,13 @@ Reload-Profile
 
 function Deploy-Profile {
 $LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=$env:COMPUTERNAME)))"
-[array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+if ( Get-Command Get-QADComputer -EA 0 ) {
+    [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+}
 if ( !$adComputers ) { Import-Module activedirectory ; ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
 
 }
-if ( $adComputers ) {
+if ( $adComputers.Count -ge 1 ) {
 
     $adComputers | % {
     $ComputerName = $_
