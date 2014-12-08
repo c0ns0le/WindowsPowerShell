@@ -113,7 +113,7 @@ Process {
     ElseIf ( $All ) { IPConfig -all }
     Else { IPConfig }
     }
-End { "`r`n" + ( Get-Date ).DateTime }
+End { "`r`n" }
 }
 
 function Get-MemberDefinition { param(
