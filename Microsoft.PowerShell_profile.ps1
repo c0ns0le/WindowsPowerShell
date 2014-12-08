@@ -101,7 +101,7 @@ $ErrorActionPreference = "continue"
 '@
 
 $dataFunctionCode = $switches + $dataFunctionCode
-New-Item -Path Function: -Name global:Get-EnvironmentFolderPath -Value $dataFunctionCode | Out-Null
+New-Item -Path Function: -Name Get-EnvironmentFolderPath -Value $dataFunctionCode | Out-Null
 Remove-Item -Path Function:Create-Get-EnvironmentFolderPath
 }
 Create-Get-EnvironmentFolderPath
