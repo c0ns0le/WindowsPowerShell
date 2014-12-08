@@ -395,7 +395,7 @@ Reload-Profile
 }
 
 function Deploy-Profile {
-[array]$adComputers = (Get-QADComputer).Name
+[array]$adComputers = ( Get-QADComputer | ? { $_.OperatingSystem -match "Server" } ).Name
 if ( !$adComputers ) { Import-Module ActiveDirectory -EA 0 }
 if ( $adComputers ) {
 
