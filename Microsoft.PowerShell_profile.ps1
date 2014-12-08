@@ -395,16 +395,19 @@ Reload-Profile
 }
 
 function Deploy-Profile {
-[array]$adComputers = ( Get-QADComputer | ? { $_.OperatingSystem -match "Server" } ).Name
-if ( !$adComputers ) { Import-Module ActiveDirectory -EA 0 }
+$LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=$env:COMPUTERNAME)))"
+[array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+if ( !$adComputers ) { Import-Module activedirectory ; ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+
+}
 if ( $adComputers ) {
 
     $adComputers | % {
     $ComputerName = $_
-
-        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" ) {
-        $profileData = $profile.CurrentUserCurrentHost
-            $profileData | Copy-Item "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell"
+		$ComputerName
+        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" ) {
+        if ( !( Get-Item "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" ) ) { New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null }
+        Copy-Item ( Resolve-Path $profile ) -Destination "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -Force | Out-Null
         }
     }
 }
