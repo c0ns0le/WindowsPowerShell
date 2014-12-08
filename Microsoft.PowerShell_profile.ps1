@@ -344,6 +344,22 @@ Test-Connection -ComputerName $ComputerName -Count $Count | Select-Object @{ Nam
 }
 }
 
+function Test-FileLock {
+    ## Attempts to open a file and trap the resulting error if the file is already open/locked
+    param ([string]$filePath )
+    $filelocked = $false
+    $fileInfo = New-Object System.IO.FileInfo $filePath
+    trap {
+        Set-Variable -name Filelocked -value $true -scope 1
+        continue
+    }
+    $fileStream = $fileInfo.Open( [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None )
+    if ($fileStream) {
+        $fileStream.Close()
+    }
+    $filelocked
+}
+
 function Write-Color { param ( $ForegroundColor )
 	# save the current color
     $fc = $host.UI.RawUI.ForegroundColor
