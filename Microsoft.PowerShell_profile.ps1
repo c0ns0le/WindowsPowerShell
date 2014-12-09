@@ -73,6 +73,8 @@ Set-Alias -Name "hostname" -Value "Prevent-CMDCommands"
 #endregion
 
 #region Custom Functions
+function Add-AliasToCMD-LS { "dir %1" | Out-File -FilePath "$env:SystemRoot\system32\ls.bat" -Encoding default -Force }
+
 function Get-ADAcl { param([string]$name)
 Push-Location ad:
 (Get-Acl (Get-QADObject $name).DN).access | Select identityreference -Unique | FT -AutoSize
@@ -320,6 +322,25 @@ function Prevent-CMDCommands {
 
 function Select-FirstObject { $input | Select-Object -First 1 }
 function Select-LastObject { $input | Select-Object -Last 1 }
+
+function Self-Elevating { param( $args )
+Set-Location ( Get-Item $MyInvocation.MyCommand.Path ).Directory
+
+$myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$myWindowsPrincipal = new-object System.Security.Principal.WindowsPrincipal( $myWindowsID )
+$adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+
+if (!$myWindowsPrincipal.IsInRole( $adminRole )) {
+
+[string[]]$argList = @( '-NoProfile', '-NoExit', '-File', """$( $MyInvocation.MyCommand.Path )""" )
+$argList += $MyInvocation.BoundParameters.GetEnumerator() | % { "-$( $_.Key )", "$( $_.Value )" }
+$argList += $MyInvocation.UnboundArguments
+
+Start-Process PowerShell.exe -Verb Runas -WorkingDirectory $pwd -ArgumentList $argList
+
+exit
+}
+}
 
 function Set-PinnedApplication {
 <#  
