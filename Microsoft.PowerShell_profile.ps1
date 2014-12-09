@@ -335,11 +335,10 @@ Set-PinnedApplication -Action PinToStartMenu -FilePath "C:\WINDOWS\system32\note
 .EXAMPLE 
 Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\notepad.exe" 
 #>
- 
        [CmdletBinding()] 
        param( 
       [Parameter(Mandatory=$true)][ValidateSet("PintoStartMenu","UnpinfromStartMenu","PintoTaskbar","UnpinfromTaskbar")][string]$Action, 
-      [Parameter(Mandatory=$true)][string]$FilePath 
+      [Parameter(Mandatory=$true,ValueFromPipeline=$True)][string]$FilePath 
        ) 
        if(-not (test-path $FilePath)) {  
            throw "FilePath does not exist."   
@@ -393,6 +392,14 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
     } 
     InvokeVerb -FilePath $FilePath -Verb $(GetVerb -VerbId $verbs.$action) 
 } 
+
+function Set-WorkEviroment {
+
+$myPinnedApplications = "C:\Windows\system32\dsa.msc", "C:\Windows\system32\compmgmt.msc", "C:\Windows\system32\dhcpmgmt.msc", "C:\Windows\system32\dnsmgmt.msc", "C:\Windows\system32\gpmc.msc"
+
+$myPinnedApplications | % { Set-PinnedApplication -Action PintoTaskbar $_ }
+
+}
 
 function Search-File { param(
     [Parameter(Position=0,Mandatory=$true)][string]$SearchString,
