@@ -410,7 +410,7 @@ if ( $adComputers.Count -ge 1 ) {
     $adComputers | % {
     $ComputerName = $_
 		$ComputerName
-        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\My Documents" | Out-Null ) {
+        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" | Out-Null ) {
         if ( !( Get-Item "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" | Out-Null ) ) { New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null }
         Copy-Item ( Resolve-Path $profile ) -Destination "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -Force | Out-Null
         }
