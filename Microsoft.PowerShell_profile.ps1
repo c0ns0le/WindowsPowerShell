@@ -543,4 +543,4 @@ function global:prompt {
 Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell - it's not a shell of you grandpa!"
 Write-Host $systemInfo -ForegroundColor Green
 Write-Host ""
-Set-Location ([environment]::getfolderpath("UserProfile"))
+Set-Location $env:USERPROFILE
