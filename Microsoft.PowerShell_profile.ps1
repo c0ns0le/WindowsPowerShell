@@ -151,6 +151,30 @@ if ( $PSVersionTable.PSVersion.Major -ge 5 ) {
 	function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose }
 }
 
+function Get-Shortcut {	param( $path = $null )
+	$obj = New-Object -ComObject WScript.Shell
+	if ($path -eq $null) {
+		$pathUser = [System.Environment]::GetFolderPath('StartMenu')
+		$pathCommon = $obj.SpecialFolders.Item('AllUsersStartMenu')
+		$path = dir $pathUser, $pathCommon -Filter *.lnk -Recurse 
+	}
+	$path | ForEach-Object { 
+		$link = $obj.CreateShortcut($_.FullName)
+
+		$info = @{}
+		$info.Hotkey = $link.Hotkey
+		$info.TargetPath = $link.TargetPath
+		$info.LinkPath = $link.FullName
+		$info.Arguments = $link.Arguments
+		$info.Target = try {Split-Path $info.TargetPath -Leaf } catch { 'n/a'}
+		$info.Link = try { Split-Path $info.LinkPath -Leaf } catch { 'n/a'}
+		$info.WindowStyle = $link.WindowStyle
+		$info.IconLocation = $link.IconLocation
+
+		New-Object PSObject -Property $info
+	}
+}
+
 function New-SymLink {
 <#
     .SYNOPSIS
@@ -294,10 +318,81 @@ function Prevent-CMDCommands {
 	Write-Error $cmdError
 }
 
-function shell: { param( [Parameter(Position=1)]$Name,[Parameter(Position=2)][switch]$ListAvailable)
-if ( $ListAvailable -or !$Name ) { ( Get-ItemProperty -LiteralPath (( Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\FolderDescriptions ).PSPath )).Name | Sort-Object }
-if ( $Name ) { explorer.exe "shell:$Name" }
-}
+function Set-PinnedApplication {
+<#  
+.SYNOPSIS  
+This function are used to pin and unpin programs from the taskbar and Start-menu in Windows 7 and Windows Server 2008 R2 
+.DESCRIPTION  
+The function have to parameteres which are mandatory: 
+Action: PinToTaskbar, PinToStartMenu, UnPinFromTaskbar, UnPinFromStartMenu 
+FilePath: The path to the program to perform the action on 
+.EXAMPLE 
+Set-PinnedApplication -Action PinToTaskbar -FilePath "C:\WINDOWS\system32\notepad.exe" 
+.EXAMPLE 
+Set-PinnedApplication -Action UnPinFromTaskbar -FilePath "C:\WINDOWS\system32\notepad.exe" 
+.EXAMPLE 
+Set-PinnedApplication -Action PinToStartMenu -FilePath "C:\WINDOWS\system32\notepad.exe" 
+.EXAMPLE 
+Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\notepad.exe" 
+#>
+ 
+       [CmdletBinding()] 
+       param( 
+      [Parameter(Mandatory=$true)][ValidateSet("PintoStartMenu","UnpinfromStartMenu","PintoTaskbar","UnpinfromTaskbar")][string]$Action, 
+      [Parameter(Mandatory=$true)][string]$FilePath 
+       ) 
+       if(-not (test-path $FilePath)) {  
+           throw "FilePath does not exist."   
+    } 
+    
+       function InvokeVerb { 
+           param([string]$FilePath,$verb) 
+        $verb = $verb.Replace("&","") 
+        $path= split-path $FilePath 
+        $shell=new-object -com "Shell.Application"  
+        $folder=$shell.Namespace($path)    
+        $item = $folder.Parsename((split-path $FilePath -leaf)) 
+        $itemVerb = $item.Verbs() | ? {$_.Name.Replace("&","") -eq $verb} 
+        if($itemVerb -eq $null){ 
+            Write-Error "Verb $verb not found."             
+        } else { 
+            $itemVerb.DoIt() 
+        } 
+            
+       } 
+    function GetVerb { 
+        param([int]$verbId) 
+        try { 
+            $t = [type]"CosmosKey.Util.MuiHelper" 
+        } catch { 
+            $def = [Text.StringBuilder]"" 
+            [void]$def.AppendLine('[DllImport("user32.dll")]') 
+            [void]$def.AppendLine('public static extern int LoadString(IntPtr h,uint id, System.Text.StringBuilder sb,int maxBuffer);') 
+            [void]$def.AppendLine('[DllImport("kernel32.dll")]') 
+            [void]$def.AppendLine('public static extern IntPtr LoadLibrary(string s);') 
+            add-type -MemberDefinition $def.ToString() -name MuiHelper -namespace CosmosKey.Util             
+        } 
+        if($global:CosmosKey_Utils_MuiHelper_Shell32 -eq $null){         
+            $global:CosmosKey_Utils_MuiHelper_Shell32 = [CosmosKey.Util.MuiHelper]::LoadLibrary("shell32.dll") 
+        } 
+        $maxVerbLength=255 
+        $verbBuilder = new-object Text.StringBuilder "",$maxVerbLength 
+        [void][CosmosKey.Util.MuiHelper]::LoadString($CosmosKey_Utils_MuiHelper_Shell32,$verbId,$verbBuilder,$maxVerbLength) 
+        return $verbBuilder.ToString() 
+    } 
+ 
+    $verbs = @{  
+        "PintoStartMenu"=5381 
+        "UnpinfromStartMenu"=5382 
+        "PintoTaskbar"=5386 
+        "UnpinfromTaskbar"=5387 
+    } 
+        
+    if($verbs.$Action -eq $null){ 
+           Throw "Action $action not supported`nSupported actions are:`n`tPintoStartMenu`n`tUnpinfromStartMenu`n`tPintoTaskbar`n`tUnpinfromTaskbar" 
+    } 
+    InvokeVerb -FilePath $FilePath -Verb $(GetVerb -VerbId $verbs.$action) 
+} 
 
 function Search-File { param(
     [Parameter(Position=0,Mandatory=$true)][string]$SearchString,
@@ -313,6 +408,11 @@ function Search-File { param(
     [System.IO.Directory]::EnumerateFiles($path,$SearchString,[System.IO.SearchOption]::AllDirectories)	
     }
     } catch { $_ }
+}
+
+function shell: { param( [Parameter(Position=1)]$Name,[Parameter(Position=2)][switch]$ListAvailable)
+if ( $ListAvailable -or !$Name ) { ( Get-ItemProperty -LiteralPath (( Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\FolderDescriptions ).PSPath )).Name | Sort-Object }
+if ( $Name ) { explorer.exe "shell:$Name" }
 }
 
 function Test-xConnection { param(
