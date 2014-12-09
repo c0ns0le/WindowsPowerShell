@@ -539,7 +539,7 @@ function global:prompt {
     Write-Host " "-n -f $color_decoration
     Write-Host ( Shorten-Path ( Get-Location ).Path ) -n -f $color_Location
     
-	Write-VcsStatus
+	if ( Get-Command Write-VcsStatus -EA 0 ) { Write-VcsStatus }
 	
 	if ( $NestedPromptLevel -gt 0 ) {
     
