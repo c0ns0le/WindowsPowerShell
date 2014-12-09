@@ -508,30 +508,26 @@ if ( $adComputers.Count -ge 1 ) {
 }
 }
 
-function Deploy-Profile {
-$LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=$env:COMPUTERNAME)))"
-if ( Get-Command Get-QADComputer -EA 0 ) {
-    [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
-}
-if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name }
-if ( $adComputers.Count -ge 1 ) {
+function Reload-Profile { $Profile | % { . $_ } }
 
-    $adComputers | % {
-    $ComputerName = $_
-        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" ) {
-            if ( !( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -EA 0 ) ) {
-            New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null }
-        Write-host $ComputerName
-        Copy-Item ( Resolve-Path $profile ) -Destination "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -Force | Out-Null
-        }
-    }
-}
+function Update-Profile {
+
+$psProfileFileName = "Microsoft.PowerShell_profile.ps1"
+$psISEProfileFileName = "Microsoft.PowerShellISE_profile.ps1"
+
+$urlPSProfile = "https://raw.githubusercontent.com/ALIENQuake/WindowsPowerShell/master/$psProfileFileName"
+
+$psPersonalPatch = [Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerShell\"
+
+$fullPathPSProfile = $psPersonalPatch + $psProfileFileName
+
+Get-WebFile $urlPSProfile $fullPathPSProfile
+
+Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force | Out-Null
+
+Reload-Profile
 }
 
-function Reload-Profile {
-[array]$dataProfileFiles = $Profile.AllUsersAllHosts,$Profile.AllUsersCurrentHost,$Profile.CurrentUserAllHosts,$Profile.CurrentUserCurrentHost
-$dataProfileFiles | % { if ( Test-Path $_ ) { Write-Verbose "Running $_" ; . $_ | Out-Null }}
-}
 #endregion
 
 #region Info
