@@ -379,22 +379,33 @@ if ( $is ) {
     } else { Start-BitsTransfer -Source $url -Destination $fullPath | Out-Null }
 }
 
-function Update-Profile {
+function Deploy-Profile {
+$LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=$env:COMPUTERNAME)))"
+if ( Get-Command Get-QADComputer -EA 0 ) {
+    [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server 2008" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+}
+if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server 2008" -and $_.Name -ne $env:COMPUTERNAME } ).Name }
+if ( $adComputers.Count -ge 1 ) {
 
-$psProfileFileName = "Microsoft.PowerShell_profile.ps1"
-$psISEProfileFileName = "Microsoft.PowerShellISE_profile.ps1"
-
-$urlPSProfile = "https://raw.githubusercontent.com/ALIENQuake/WindowsPowerShell/master/$psProfileFileName"
-
-$psPersonalPatch = [Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerShell\"
-
-$fullPathPSProfile = $psPersonalPatch + $psProfileFileName
-
-Get-WebFile $urlPSProfile $fullPathPSProfile
-
-Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force | Out-Null
-
-Reload-Profile
+    $adComputers | % {
+    $ComputerName = $_
+    if ( Test-Connection -ComputerName $ComputerName -Count 1 -Quiet ) {
+        if ( Test-Path "\\$ComputerName\c$\Users" ) {
+        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" ) {
+            if ( !( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -EA 0 ) ) {
+            New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null }
+        Write-host $ComputerName
+        Copy-Item ( Resolve-Path $profile ) -Destination "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -Force | Out-Null
+        } else {
+        New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME" -ItemType Directory | Out-Null
+        New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" -ItemType Directory | Out-Null
+        New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null
+        Copy-Item ( Resolve-Path $profile ) -Destination "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -Force | Out-Null
+        }
+        } else { "2003" }
+        }
+    }
+}
 }
 
 function Deploy-Profile {
