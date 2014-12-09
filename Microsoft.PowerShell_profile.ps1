@@ -402,16 +402,15 @@ $LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=$env:COMPUTERNAME)))"
 if ( Get-Command Get-QADComputer -EA 0 ) {
     [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
 }
-if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
-
-}
+if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name }
 if ( $adComputers.Count -ge 1 ) {
 
     $adComputers | % {
     $ComputerName = $_
-		$ComputerName
-        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" | Out-Null ) {
-        if ( !( Get-Item "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" | Out-Null ) ) { New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null }
+        if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents" ) {
+            if ( !( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -EA 0 ) ) {
+            New-Item -Path "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -ItemType Directory | Out-Null }
+        Write-host "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell"
         Copy-Item ( Resolve-Path $profile ) -Destination "\\$ComputerName\c$\Users\$env:USERNAME\Documents\WindowsPowershell" -Force | Out-Null
         }
     }
