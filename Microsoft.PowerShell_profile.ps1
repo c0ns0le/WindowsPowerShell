@@ -318,6 +318,9 @@ function Prevent-CMDCommands {
 	Write-Error $cmdError
 }
 
+function Select-FirstObject { $input | Select-Object -First 1 }
+function Select-LastObject { $input | Select-Object -Last 1 }
+
 function Set-PinnedApplication {
 <#  
 .SYNOPSIS  
