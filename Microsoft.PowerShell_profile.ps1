@@ -552,7 +552,8 @@ $psPersonalPatch = [Environment]::GetFolderPath("MyDocuments") + "\WindowsPowerS
 
 $fullPathPSProfile = $psPersonalPatch + $psProfileFileName
 
-Get-WebFile $urlPSProfile $fullPathPSProfile
+#Get-WebFile $urlPSProfile $fullPathPSProfile
+Invoke-WebRequest $urlPSProfile -OutFile $fullPathPSProfile
 
 Copy-Item -Path $fullPathPSProfile -Destination ( $psPersonalPatch + "\" + $psISEProfileFileName ) -Force | Out-Null
 
