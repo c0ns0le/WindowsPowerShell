@@ -115,15 +115,18 @@ process {
     }
 }
 
-function Get-PersonalFiles {
-$LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=*Infoscreenserver*)))"
+function Get-PersonalFiles { param( [Parameter(position=0,ValueFromPipeline=$true)]$servers )
+if ( !$servers ) {
+$LDAPFilter = "(&(OperatingSystem=*Server*)(!(CanonicalName=*Infoscreenserver*)))"
 
-if ( Get-Command Get-QADComputer -EA 0 ) {
-    [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+if ( ( Get-Command Get-QADComputer -EA 0) -eq $true ) {
+    [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" } ).Name
 }
-if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name }
+if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = (( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" } ).Name) }
+[array]$servers = $adComputers
+}
 
-$adComputers | % {
+$servers | % {
 $ComputerName = $_
 Write-host $ComputerName
 
