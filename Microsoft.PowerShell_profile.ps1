@@ -115,6 +115,30 @@ process {
     }
 }
 
+function Get-PersonalFiles {
+$LDAPFilter = "(&(OperatingSystem=*Server*)(!(Name=*Infoscreenserver*)))"
+
+if ( Get-Command Get-QADComputer -EA 0 ) {
+    [array]$adComputers = ( Get-QADComputer -LDAPFilter $LDAPFilter -SecurityMask "None" -DontUseDefaultIncludedProperties -IncludedProperties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name
+}
+if ( !$adComputers ) { Import-Module activedirectory ; [array]$adComputers = ( Get-ADComputer -Filter * -Properties Name,OperatingSystem | ? { $_.OperatingSystem -match "Server" -and $_.Name -ne $env:COMPUTERNAME } ).Name }
+
+$adComputers | % {
+$ComputerName = $_
+Write-host $ComputerName
+
+if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME" ) {
+    Get-ChildItem "\\$ComputerName\c$\Users\$env:USERNAME\Desktop\" -Exclude "WindowsPowershell","Visual Studio*"| Select -ExpandProperty Name
+    Get-ChildItem "\\$ComputerName\c$\Users\$env:USERNAME\Documents\" -Exclude "WindowsPowershell","Visual Studio*"| Select -ExpandProperty Name
+    Get-ChildItem "\\$ComputerName\c$\Users\$env:USERNAME\Downloads\" -Exclude "WindowsPowershell","Visual Studio*"| Select -ExpandProperty Name
+} else { if ( Test-Path "\\$ComputerName\c$\Documents and Settings\$env:USERNAME\" ) {
+    Get-ChildItem "\\$ComputerName\c$\Documents and Settings\$env:USERNAME\Desktop\" -Exclude "WindowsPowershell","Visual Studio*"| Select -ExpandProperty Name
+    Get-ChildItem "\\$ComputerName\c$\Documents and Settings\$env:USERNAME\My Documents\" -Exclude "WindowsPowershell","Visual Studio*"| Select -ExpandProperty Name
+    }
+}
+}
+}
+
 function Get-QCommand {
 	if ($args[0] -eq $null)	{ Get-Command -PSSnapin Quest.ActiveRoles*
     } else { Get-Command $args[0] | Where-Object { $_.PSSnapIn -like 'Quest.ActiveRoles*' } }
