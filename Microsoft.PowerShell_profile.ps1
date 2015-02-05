@@ -1,4 +1,4 @@
-﻿#Import-Module ActiveDirectory -EA 0
+#Import-Module ActiveDirectory -EA 0
 Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
 if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
 Import-Module OneGet -EA 0
@@ -395,7 +395,7 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
            throw "FilePath does not exist."   
     } 
     
-       function InvokeVerb { 
+    function InvokeVerb { 
            param([string]$FilePath,$verb) 
         $verb = $verb.Replace("&","") 
         $path= split-path $FilePath 
@@ -403,13 +403,13 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
         $folder=$shell.Namespace($path)    
         $item = $folder.Parsename((split-path $FilePath -leaf)) 
         $itemVerb = $item.Verbs() | ? {$_.Name.Replace("&","") -eq $verb} 
-        if($itemVerb -eq $null){ 
-            Write-Error "Verb $verb not found."             
+        if($itemVerb -ne $null){
+			$itemVerb.DoIt() 
         } else { 
-            $itemVerb.DoIt() 
+			Write-Verbose "Verb $verb not found."
         } 
             
-       } 
+		} 
     function GetVerb { 
         param([int]$verbId) 
         try { 
