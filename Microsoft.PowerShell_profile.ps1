@@ -444,7 +444,7 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
     InvokeVerb -FilePath $FilePath -Verb $(GetVerb -VerbId $verbs.$action) 
 } 
 
-function Set-WorkEviroment {
+function Set-Workplace {
 
 $myPinnedApplications = "C:\Windows\system32\dsa.msc", "C:\Windows\system32\compmgmt.msc", "C:\Windows\system32\dhcpmgmt.msc", "C:\Windows\system32\dnsmgmt.msc", "C:\Windows\system32\gpmc.msc"
 
