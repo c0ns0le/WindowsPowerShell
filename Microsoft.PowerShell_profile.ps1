@@ -7,10 +7,131 @@ if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . ( Resolve-Path "$env:L
     Import-Module posh-git ; Start-SshAgent -Quiet
 }
 
+#region Console
+function Set-ConsoleWindowSize { Param(
+    [int]$x = $host.ui.rawui.windowsize.width,
+    [int]$y = $host.ui.rawui.windowsize.heigth)
+    $windowSize = New-Object System.Management.Automation.Host.Size($x,$y)
+    $bufferSize = New-Object System.Management.Automation.Host.Size($x,($y*100))
+    $host.ui.rawui.BufferSize = $bufferSize
+    $host.ui.rawui.WindowSize = $windowSize
+}
+
+$consoleFontCode = @"
+    public delegate bool SetConsoleFont( 
+        IntPtr hWnd, 
+        uint DWORD 
+    ); 
+ 
+    public delegate uint GetNumberOfConsoleFonts(); 
+ 
+    public delegate bool GetConsoleFontInfo( 
+        IntPtr hWnd, 
+        bool BOOL, 
+        uint DWORD, 
+        [Out] CONSOLE_FONT_INFO[] ConsoleFontInfo 
+    ); 
+ 
+ 
+    [StructLayout(LayoutKind.Sequential)] 
+    public struct CONSOLE_FONT_INFO 
+    { 
+        public uint nFont; 
+        public COORD dwFontSize; 
+    } 
+ 
+    [StructLayout(LayoutKind.Sequential)] 
+    public struct COORD 
+    { 
+        public short X; 
+        public short Y; 
+    } 
+ 
+    [DllImport("kernel32.dll")] 
+    public static extern IntPtr GetModuleHandleA( 
+        string module 
+    ); 
+ 
+    [DllImport("kernel32", CharSet=CharSet.Ansi, ExactSpelling=true, SetLastError=true)] 
+    public static extern IntPtr GetProcAddress( 
+        IntPtr hModule, 
+        string procName 
+        ); 
+ 
+    [DllImport("kernel32.dll", SetLastError = true)] 
+    public static extern IntPtr GetStdHandle( 
+        int nStdHandle 
+        ); 
+ 
+    [DllImport("kernel32.dll", SetLastError = true)] 
+    public static extern bool GetCurrentConsoleFont( 
+        IntPtr hConsoleOutput, 
+        bool bMaximumWindow, 
+        out CONSOLE_FONT_INFO lpConsoleCurrentFont 
+        ); 
+"@
+Add-Type -MemberDefinition $consoleFontCode -Name Console -Namespace Win32API | Out-Null
+Remove-Variable consoleFontCode
+$_hmod = [Win32API.Console]::GetModuleHandleA("kernel32") 
+
+"SetConsoleFont", "GetNumberOfConsoleFonts", "GetConsoleFontInfo" | % { 
+        $param = @() 
+        $proc = [Win32API.Console]::GetProcAddress($_hmod, $_) 
+        $delegate = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, "Win32API.Console+$_") 
+ 
+        $delegate.Invoke.OverloadDefinitions[0] -match "^[^(]+\((.*)\)" > $null 
+        $argtypes = $Matches[1] -split ", " | ? { $_ } | % { 
+                '[{0}] ${1}' -f ($_ -split " "); 
+                $param += "$" + ($_ -split " ")[-1] 
+            } 
+        $argtypes = $argtypes -join ", " 
+        $param = $param -join ", " 
+        iex @" 
+            function $_($argtypes){ 
+                `$$_ = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, 'Win32API.Console+$_') 
+                `$$_.Invoke( $param ) 
+            } 
+"@ 
+} 
+
+$STD_OUTPUT_HANDLE = -11 
+$_hConsoleScreen = [Win32API.Console]::GetStdHandle($STD_OUTPUT_HANDLE)
+
+$_DefaultFont = New-Object Win32API.Console+CONSOLE_FONT_INFO
+[Win32API.Console]::GetCurrentConsoleFont($_hConsoleScreen, $true, [ref]$_DefaultFont) | Out-Null
+
+function Get-ConsoleFontInfo {
+    $_FontsNum = GetNumberOfConsoleFonts
+    $_ConsoleFonts = New-Object Win32API.Console+CONSOLE_FONT_INFO[] $_FontsNum
+    GetConsoleFontInfo $_hConsoleScreen $false $_FontsNum $_ConsoleFonts > $null
+    $_ConsoleFonts | Select-Object @{l="nFont";e={$_ConsoleFonts.Count-$_.nFont-1}}, @{l="dwFontSizeX";e={$_.dwFontSize.X}}, @{l="dwFontSizeY";e={$_.dwFontSize.Y}} | Sort-Object nFont
+}
+
+function Set-ConsoleFont ([Parameter(position=0,Mandatory=$true)][Uint32]$size=$_DefaultFont.nFont, [IntPtr]$hWnd=$_hConsoleScreen) {
+    $flag = SetConsoleFont $hWnd $size
+    if ( !$flag ) { Get-ConsoleFontInfo ; throw "Illegal font index number. Check correct number using 'Get-ConsoleFontInfo'." }
+}
+if ( $host.Name -eq "ConsoleHost" ) { Set-ConsoleFont 8 }
+$Host.UI.RawUI.BackgroundColor = 'Black'
+$Host.UI.RawUI.ForegroundColor = 'White'
+ if ( $Host.Name -eq "Windows PowerShell ISE Host" ) {
+$Host.PrivateData.ConsolePaneBackgroundColor = 'Black'
+$Host.PrivateData.ConsolePaneTextBackgroundColor = 'Black'
+$Host.PrivateData.ConsolePaneForegroundColor = 'White'
+}
+#endregion
+
 #region Registry
-New-PSDrive -Name HKU  -PSProvider Registry -Root Registry::HKEY_USERS -EA 0 | Out-Null
+New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS -EA 0 | Out-Null
 New-PSDrive -Name HKCR -PSProvider Registry -Root Registry::HKEY_CLASSES_ROOT -EA 0 | Out-Null
 New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG -EA 0 | Out-Null
+#endregion
+
+#region Right-Click: Run with Powershell
+if (( Get-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -EA 0 ).Icon -ne "imageres.dll,73") {
+New-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -Value "imageres.dll,73" -Force
+Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoExit -Command if(( Get-ExecutionPolicy ) -ne `"Bypass`" ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force
+}
 #endregion
 
 #region Script Browser Begin
@@ -347,6 +468,8 @@ function Prevent-CMDCommands {
 	Write-Error $cmdError
 }
 
+function Show-Colors { [enum]::GetValues( [ConsoleColor] ) | % { Write-Host $_ -ForegroundColor $_ } }
+
 function Select-FirstObject { $input | Select-Object -First 1 }
 function Select-LastObject { $input | Select-Object -Last 1 }
 
@@ -473,6 +596,8 @@ if ( $ListAvailable -or !$Name ) { ( Get-ItemProperty -LiteralPath (( Get-ChildI
 if ( $Name ) { explorer.exe "shell:$Name" }
 }
 
+function Enter-Scope { $host.EnterNestedPrompt() }
+
 function Test-xConnection { param(
 [Parameter(Position=1,ValueFromPipeline=$true)]$ComputerName,
 [int]$Count=1,
@@ -593,12 +718,12 @@ Reload-Profile
 if ( $host.name -eq "PowerGUIScriptEditorHost" ) {
 return
 }
-if ( $host.name -eq "ConsoleHost" ) {
+
 $color_decoration = [ConsoleColor]::DarkGreen
 $color_Host = [ConsoleColor]::Green
 $color_Location = [ConsoleColor]::Cyan
-}
-if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { $host.ui.rawui.WindowSize.Width = "120" }
+
+if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { Set-ConsoleWindowSize -x 120 -y 35 }
 
 #add global variable if it doesn't already exist
 if ( !($global:LastCheck) ) {
@@ -659,19 +784,12 @@ function global:prompt {
 	[Environment]::CurrentDirectory = ( Get-Location -PSProvider FileSystem ).ProviderPath
 
 	# Check Running Jobs
-    $jobsCount = (Get-Job -State Running).Count
-    
-	# Custom color for Windows console
-    if ( $Host.Name -eq "ConsoleHost" ) {
-        Write-Host $promptString -NoNewline -ForegroundColor Blue
-    # Default color for the rest.
-    } else {
-        Write-Host $promptString -NoNewline
-    }
+    if ( (Get-Job -State Running).Count -ne 0) { $jobsCount = (Get-Job -State Running).Count }
+
     #Set the PowerShell session time, computername and current location in the title bar.
 
     #Get start time for the current PowerShell session, $pid is a special variable for the current PowerShell process ID.
-    [datetime]$psStart = ( get-Process -id $pid ).StartTime
+    [datetime]$psStart = ( Get-Process -id $pid ).StartTime
     
     #Strip off the millisecond part with Substring(). The millisecond part will come after the last period.
     $s = (( Get-Date ) - $psStart).ToString()
@@ -679,28 +797,28 @@ function global:prompt {
     if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
         $title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERDNSDOMAIN,"\",$env:USERNAME,"@",$env:computername," | ",$elapsed
     } else {
-        $title = "{0}{1}{2}{3}{4}{5}{6}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERNAME,"@",$env:computername," | ",$elapsed
+        $title = "{0}{1}{2}{3}{4}{5}{6}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERDOMAIN,"@",$env:computername," | ",$elapsed
     }
     $host.ui.rawui.WindowTitle = $title
 
-    Write-Host "$( ( Get-History -count 1 ).id+1 ) " -n -f yellow
+    Write-Host "$( ( Get-History -count 1 ).id+1 ) " -NoNewline -ForegroundColor Yellow
     if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
-        Write-Host $env:USERDNSDOMAIN -n -f $color_Host
-        Write-Host "\" -n
+        Write-Host $env:USERDNSDOMAIN -NoNewline -ForegroundColor DarkCyan
+        Write-Host "\" -NoNewline
     }
-    Write-Host $env:USERNAME -n -f $color_Host
-    Write-Host "@" -n
-    Write-Host ( [net.dns]::GetHostName() ) -n -f $color_Host
+    Write-Host "[" -NoNewline
+    Write-Host $env:COMPUTERNAME -NoNewline -ForegroundColor Red
+    Write-Host "]" -NoNewline
+    Write-Host $env:USERNAME -NoNewline -ForegroundColor $color_Host
     Write-Host " "-n -f $color_decoration
-    Write-Host ( Shorten-Path ( Get-Location ).Path ) -n -f $color_Location
+    Write-Host ( Shorten-Path ( Get-Location ).Path ) -NoNewline -ForegroundColor $color_Location
     
 	if ( Get-Command Write-VcsStatus -EA 0 ) { Write-VcsStatus }
 	
 	if ( $NestedPromptLevel -gt 0 ) {
-    
-	$myPrompt = ( " " + "+" * $NestedPromptLevel + ">" )
+	$myPrompt = ( " " + "+" * $NestedPromptLevel + ">$jobsCount" )
     $myPrompt
-    } else { Write-Host " >" -n }
+    } else { Write-Host " >" -NoNewline ; Write-Host "$jobsCount" -ForegroundColor Red -NoNewline }
 	$global:LASTEXITCODE = $realLASTEXITCODE
     return " "
 }
