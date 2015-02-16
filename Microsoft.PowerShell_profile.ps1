@@ -1,14 +1,11 @@
-#Import-Module ActiveDirectory -EA 0
-Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
-if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
-Import-Module OneGet -EA 0
+if ( $PSVersionTable.PSVersion.Major -ge 5 ) { Import-Module OneGet }
 if ( $host.Name -eq "ConsoleHost" ) { Import-Module PSReadline -EA 0 }
-if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . ( Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" )
-    Import-Module posh-git ; Start-SshAgent -Quiet
-}
+if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" | Out-Null ; Import-Module posh-git ; Start-SshAgent -Quiet }
+if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
+    Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
 
 #region Console
-function Set-ConsoleWindowSize { Param(
+function Set-ConsoleWindowSize { param(
     [int]$x = $host.ui.rawui.windowsize.width,
     [int]$y = $host.ui.rawui.windowsize.heigth)
     $windowSize = New-Object System.Management.Automation.Host.Size($x,$y)
@@ -107,18 +104,20 @@ function Get-ConsoleFontInfo {
     $_ConsoleFonts | Select-Object @{l="nFont";e={$_ConsoleFonts.Count-$_.nFont-1}}, @{l="dwFontSizeX";e={$_.dwFontSize.X}}, @{l="dwFontSizeY";e={$_.dwFontSize.Y}} | Sort-Object nFont
 }
 
-function Set-ConsoleFont ([Parameter(position=0,Mandatory=$true)][Uint32]$size=$_DefaultFont.nFont, [IntPtr]$hWnd=$_hConsoleScreen) {
+function Set-ConsoleFont { param(
+	[Parameter(position=0,Mandatory=$true)][Uint32]$size=$_DefaultFont.nFont,
+	[IntPtr]$hWnd=$_hConsoleScreen)
     $flag = SetConsoleFont $hWnd $size
     if ( !$flag ) { Get-ConsoleFontInfo ; throw "Illegal font index number. Check correct number using 'Get-ConsoleFontInfo'." }
 }
-if ( $host.Name -eq "ConsoleHost" ) { Set-ConsoleFont 8 }
-$Host.UI.RawUI.BackgroundColor = 'Black'
-$Host.UI.RawUI.ForegroundColor = 'White'
- if ( $Host.Name -eq "Windows PowerShell ISE Host" ) {
-$Host.PrivateData.ConsolePaneBackgroundColor = 'Black'
-$Host.PrivateData.ConsolePaneTextBackgroundColor = 'Black'
-$Host.PrivateData.ConsolePaneForegroundColor = 'White'
+
+function Reset-ISEColors {
+	$Host.PrivateData.RestoreDefaults()
+	$Host.PrivateData.RestoreDefaultConsoleTokenColors()
+	$Host.PrivateData.RestoreDefaultTokenColors()
+	$Host.PrivateData.RestoreDefaultXmlTokenColors()
 }
+
 #endregion
 
 #region Registry
@@ -150,7 +149,7 @@ if ( $Host.Name -eq "Windows PowerShell ISE Host" ) {
 }
 #endregion Script Browser End
  
-#region Powershell 3 and above specific commands
+#region Powershell 3 and above specific Default Parameter Values
 if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
     if ( $PSDefaultParameterValues.Keys -notcontains "Format-Table:Autosize" ) {
     #insert Default Parameter Values for every command
@@ -183,14 +182,10 @@ Set-Alias -Name "cn" -Value "Get-ComputerName"
 Set-Alias -Name "hn" -Value "Get-ComputerName"
 Set-Alias -Name "up" -Value "Update-Profile"
 
-Set-Alias -Name "igui" -Value "Install-GUI"
-Set-Alias -Name "rvdn" -Value "Resolve-DnsName"
-
-if ( Get-Command Resolve-DnsName -EA 0 ) { Set-Alias -Name "nslookup" -Value "Prevent-CMDCommands" }
+if ( !( Get-Command Resolve-DnsName -EA 0 ) ) { Set-Alias -Name "nslookup" -Value "Prevent-CMDCommands" } else { Set-Alias -Name "nslookup" -Value "Resolve-DnsName"  }
 
 Set-Alias -Name "ping" -Value "Prevent-CMDCommands"
 Set-Alias -Name "hostname" -Value "Prevent-CMDCommands"
-
 #endregion
 
 #region Custom Functions
@@ -209,18 +204,19 @@ $sdata.trim( ";" )
 
 function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yellow }
 
-function global:Get-EnvironmentFolderPath { param( [switch]$AdminTools,[switch]$ApplicationData,[switch]$CDBurning,[switch]$CommonAdminTools,[switch]$CommonApplicationData,[switch]$CommonDesktopDirectory,[switch]$CommonDocuments,[switch]$CommonMusic,[switch]$CommonOemLinks,[switch]$CommonPictures,[switch]$CommonProgramFiles,[switch]$CommonProgramFilesX86,[switch]$CommonPrograms,[switch]$CommonStartMenu,[switch]$CommonStartup,[switch]$CommonTemplates,[switch]$CommonVideos,[switch]$Cookies,[switch]$Desktop,[switch]$DesktopDirectory,[switch]$Favorites,[switch]$Fonts,[switch]$History,[switch]$InternetCache,[switch]$LocalApplicationData,[switch]$LocalizedResources,[switch]$MyComputer,[switch]$MyDocuments,[switch]$MyMusic,[switch]$MyPictures,[switch]$MyVideos,[switch]$NetworkShortcuts,[switch]$Personal,[switch]$PrinterShortcuts,[switch]$ProgramFiles,[switch]$ProgramFilesX86,[switch]$Programs,[switch]$Recent,[switch]$Resources,[switch]$SendTo,[switch]$StartMenu,[switch]$Startup,[switch]$System,[switch]$SystemX86,[switch]$Templates,[switch]$UserProfile,[switch]$Windows )
+function Get-PersonalFolderPath { param( [switch]$AdminTools,[switch]$ApplicationData,[switch]$CDBurning,[switch]$CommonAdminTools,[switch]$CommonApplicationData,[switch]$CommonDesktopDirectory,[switch]$CommonDocuments,[switch]$CommonMusic,[switch]$CommonOemLinks,[switch]$CommonPictures,[switch]$CommonProgramFiles,[switch]$CommonProgramFilesX86,[switch]$CommonPrograms,[switch]$CommonStartMenu,[switch]$CommonStartup,[switch]$CommonTemplates,[switch]$CommonVideos,[switch]$Cookies,[switch]$Desktop,[switch]$DesktopDirectory,[switch]$Favorites,[switch]$Fonts,[switch]$History,[switch]$InternetCache,[switch]$LocalApplicationData,[switch]$LocalizedResources,[switch]$MyComputer,[switch]$MyDocuments,[switch]$MyMusic,[switch]$MyPictures,[switch]$MyVideos,[switch]$NetworkShortcuts,[switch]$Personal,[switch]$PrinterShortcuts,[switch]$ProgramFiles,[switch]$ProgramFilesX86,[switch]$Programs,[switch]$Recent,[switch]$Resources,[switch]$SendTo,[switch]$StartMenu,[switch]$Startup,[switch]$System,[switch]$SystemX86,[switch]$Templates,[switch]$UserProfile,[switch]$Windows )
 [array]$params = $PsBoundParameters | % { $_.keys }
+$currentEAP = $ErrorActionPreference
 $ErrorActionPreference = "silentlycontinue"
-$params | % { [environment]::getfolderpath("$_") }
-$ErrorActionPreference = "continue"
+$params | % { [environment]::GetFolderPath("$_") }
+$ErrorActionPreference = $currentEAP
 }
 
-function Get-IPConfig { param( [Switch]$IP, [Switch]$Mac, [Switch]$All )
+function Get-IPConfig { param( [Switch]$ip, [Switch]$MAC, [Switch]$all )
 Process {
-    If ( $MAC ) { IPConfig -all | Select-String "Physical" }
-    ElseIf ( $IP ) { IPConfig -all | Select-String "IPv" } 
-    ElseIf ( $All ) { IPConfig -all }
+    If ( $MAC ) { IPConfig.exe -all | Select-String "IPv4","Physical" }
+    ElseIf ( $ip ) { IPConfig.exe -all | Select-String "IPv4" } 
+    ElseIf ( $all ) { IPConfig.exe -all }
     Else { IPConfig }
     }
 End { "`r`n" }
@@ -229,11 +225,7 @@ End { "`r`n" }
 function Get-MemberDefinition { param(
 	[Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias("Object")]$InputObject,
     [Parameter(position=1)]$Name )
-
-process {
-    if ( $Name ) { ( $input | Get-Member $Name ).Definition.Replace("), ", ")`n" )
-	} else { ( $input | Get-Member | Out-Default ) }
-    }
+process { if ( $Name ) { ( $input | Get-Member $Name ).Definition.Replace("), ", ")`n" ) } else { ( $input | Get-Member | Out-Default ) } }
 }
 
 function Get-PersonalFiles { param( [Parameter(position=0,ValueFromPipeline=$true)]$servers )
@@ -268,7 +260,7 @@ function Get-QCommand {
     } else { Get-Command $args[0] | Where-Object { $_.PSSnapIn -like 'Quest.ActiveRoles*' } }
 }
 
-function Get-RegistryChildItem { param( $arg )
+function Get-RegistryChildItem { param( [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)]$arg )
 $hive = ((( $arg -replace "\[" ) -replace "\]" ) -replace ":" -split "\\" )[0]
 $partialpath = ((( $arg -replace "\[" ) -replace "\]" ) -split("\\",2 ))[-1]
 switch ( $hive ) {
@@ -282,7 +274,7 @@ Get-Item ( $hive + ":\" + $partialpath )
 Get-ChildItem -Path ( $hive + ":\" + $partialpath ) -Recurse | % { Get-Item (( $hive + ":\" + $partialpath ) + "\\" + (( $_.Name -split "\\" )[-1]))  }
 }
 
-function Get-RegistryItemProperty { param( $arg )
+function Get-RegistryItemProperty { param( [Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)]$arg )
 $hive = ((( $arg -replace "\[" ) -replace "\]" ) -replace ":" -split "\\" )[0]
 $itemName = ((( $arg -replace "\[" ) -replace "\]" ) -split "\\" )[-1]
 $partialpath = (((( $arg -replace "\[" ) -replace "\]" ) -split( "\\",2 ))[-1] ) -replace $itemName
@@ -296,19 +288,17 @@ switch ( $hive ) {
 Get-ItemProperty -Path ( $hive + ":\" + $partialpath ) -Name $itemName | Select-Object -Property $itemName
 }
 
-#For the upcoming WMF 5.0 OneGet feature, hell yee!
-if ( $PSVersionTable.PSVersion.Major -ge 5 ) {
-	function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose }
-}
+if ( $PSVersionTable.PSVersion.Major -ge 5 ) { function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose } } #For the upcoming WMF 5.0 OneGet feature, hell yee!
 
 function Get-Shortcut {	param( $path = $null )
 	$obj = New-Object -ComObject WScript.Shell
 	if ($path -eq $null) {
-		$pathUser = [System.Environment]::GetFolderPath('StartMenu')
-		$pathCommon = $obj.SpecialFolders.Item('AllUsersStartMenu')
-		$path = dir $pathUser, $pathCommon -Filter *.lnk -Recurse 
+		$pathUser = [Environment]::GetFolderPath('StartMenu')
+		$pathCommon = [Environment]::GetFolderPath('CommonStartMenu')
+
+		$path = Get-ChildItem $pathUser, $pathCommon -Filter *.lnk -Recurse
 	}
-	$path | ForEach-Object { 
+	$path | % { 
 		$link = $obj.CreateShortcut($_.FullName)
 
 		$info = @{}
@@ -316,7 +306,7 @@ function Get-Shortcut {	param( $path = $null )
 		$info.TargetPath = $link.TargetPath
 		$info.LinkPath = $link.FullName
 		$info.Arguments = $link.Arguments
-		$info.Target = try {Split-Path $info.TargetPath -Leaf } catch { 'n/a'}
+		$info.Target = try { Split-Path $info.TargetPath -Leaf } catch { 'n/a'}
 		$info.Link = try { Split-Path $info.LinkPath -Leaf } catch { 'n/a'}
 		$info.WindowStyle = $link.WindowStyle
 		$info.IconLocation = $link.IconLocation
@@ -450,15 +440,12 @@ Process {
         }
     }
 }
- }
-
-function New-UniverseMode {
-    $path = [Environment]::GetFolderPath("Desktop") + "\" + "Universe Mode.{ED7BA470-8E54-465E-825C-99712043E01C}"
-    New-Item -ItemType Directory -Path $path
 }
 
+function New-UniverseMode { New-Item -ItemType Directory -Path ([Environment]::GetFolderPath("Desktop") + "\" + "Universe Mode.{ED7BA470-8E54-465E-825C-99712043E01C}") | Out-Null }
+
 function Prevent-CMDCommands {
-	$cmdError = "Using old CMD/DOS commands in Powershell is no longer tolerated because Powershell it's not a shell of you grandpa!"
+	$cmdError = "Using old CMD/DOS commands is no longer tolerated because Powershell it's not a shell of you grandpa!"
 	switch ( $^ ) {
 	"cd" { Write-Host "Use Set-Location instead!" }
 	"hostname" { Write-Host 'Use $env:COMPUTERNAME instead!' }
@@ -480,7 +467,7 @@ $myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 $myWindowsPrincipal = new-object System.Security.Principal.WindowsPrincipal( $myWindowsID )
 $adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
 
-if (!$myWindowsPrincipal.IsInRole( $adminRole )) {
+if ( !$myWindowsPrincipal.IsInRole( $adminRole )) {
 
 [string[]]$argList = @( '-NoProfile', '-NoExit', '-File', """$( $MyInvocation.MyCommand.Path )""" )
 $argList += $MyInvocation.BoundParameters.GetEnumerator() | % { "-$( $_.Key )", "$( $_.Value )" }
@@ -579,6 +566,7 @@ function Search-File { param(
     [Parameter(Position=0,Mandatory=$true)][string]$SearchString,
     [Parameter(Position=1,Mandatory=$true, ValueFromPipeline = $true)][string]$path = ( Get-Location ).Path
     )
+    # if (Get-acl "C:\Users\ALIEN\AppData\Local\Application Data").Access | ? { $_.AccessControlType -eq "Deny" } then exclude folder
     try {
     [array]$dataDirectory = $null
 	Get-ChildItem $path | ? { $_.Attributes -match "Directory" -and $_.Attributes -notmatch "System" -and $_.Attributes -notmatch "Hidden" -and $_.Attributes -notmatch "ReparsePoint" } | % {
@@ -591,7 +579,7 @@ function Search-File { param(
     } catch { $_ }
 }
 
-function shell: { param( [Parameter(Position=1)]$Name,[Parameter(Position=2)][switch]$ListAvailable)
+function shell: { param( [Parameter(Position=1)]$Name,[switch]$ListAvailable)
 if ( $ListAvailable -or !$Name ) { ( Get-ItemProperty -LiteralPath (( Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\FolderDescriptions ).PSPath )).Name | Sort-Object }
 if ( $Name ) { explorer.exe "shell:$Name" }
 }
@@ -723,18 +711,28 @@ $color_decoration = [ConsoleColor]::DarkGreen
 $color_Host = [ConsoleColor]::Green
 $color_Location = [ConsoleColor]::Cyan
 
-if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { Set-ConsoleWindowSize -x 120 -y 35 }
+if ( $host.Name -eq "ConsoleHost" ) {
+
+$Host.UI.RawUI.BackgroundColor = "Black"
+$Host.UI.RawUI.ForegroundColor = "White"
+Set-ConsoleWindowSize -x 120 -y 35
+Set-ConsoleFont 8 }
+
+if ( $host.name -eq "Windows PowerShell ISE Host" ) {
+
+}
+if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { }
 
 #add global variable if it doesn't already exist
 if ( !($global:LastCheck) ) {
 	$global:LastCheck = Get-Date
-    $global:cdrive = Get-WMIObject -query "Select Freespace,Size from win32_logicaldisk where deviceid = 'c:'"
+    $global:cdrive = Get-WMIObject -Query "Select Freespace,Size from win32_logicaldisk where deviceid = 'c:'"
 }
 
 #only refresh disk information once every 15 minutes
 $min = ( New-TimeSpan $Global:lastCheck ).TotalMinutes
 if ( $min -ge 15 ) {
-    $global:cdrive = Get-WMIObject -query "Select Freespace,Size from win32_logicaldisk where deviceid = 'c:'"
+    $global:cdrive = Get-WMIObject -Query "Select Freespace,Size from win32_logicaldisk where deviceid = 'c:'"
     $global:LastCheck = Get-Date
 }
 
@@ -784,7 +782,7 @@ function global:prompt {
 	[Environment]::CurrentDirectory = ( Get-Location -PSProvider FileSystem ).ProviderPath
 
 	# Check Running Jobs
-    if ( (Get-Job -State Running).Count -ne 0) { $jobsCount = (Get-Job -State Running).Count }
+    if ( (Get-Job -State Running).Count -ne 0) { $jobsCount = ( Get-Job -State Running ).Count }
 
     #Set the PowerShell session time, computername and current location in the title bar.
 
@@ -827,4 +825,4 @@ function global:prompt {
 Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell - it's not a shell of you grandpa!"
 Write-Host $systemInfo -ForegroundColor Green
 Write-Host ""
-Set-Location $env:USERPROFILE
+Set-Location $HOME
