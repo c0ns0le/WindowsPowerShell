@@ -129,7 +129,7 @@ New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG 
 #region Right-Click: Run with Powershell
 if (( Get-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -EA 0 ).Icon -ne "imageres.dll,73") {
 New-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -Value "imageres.dll,73" -Force
-Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoExit -Command if(( Get-ExecutionPolicy ) -ne `"Bypass`" ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force
+Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoExit -Command if(( Get-ExecutionPolicy ) -ne `'Bypass`' ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force
 }
 #endregion
 
