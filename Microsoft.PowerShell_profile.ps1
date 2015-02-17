@@ -4,6 +4,10 @@ if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . Resolve-Path "$env:LOC
 if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
     Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
 
+if ( !( $env:Path -split ";" | ? { $_ -like "*git\bin" } )) {
+if ( Test-Path D:\Programs\GitPortable\bin\git.exe ) { $env:Path = $env:Path + ";D:\Programs\GitPortable\bin;D:\Programs\GitPortable\cmd" }
+}
+
 #region Console
 function Set-ConsoleWindowSize { param(
     [int]$x = $host.ui.rawui.windowsize.width,
@@ -777,48 +781,48 @@ function Shorten-Path { param( [string]$path )
 }
 
 function global:prompt {
-	$realLASTEXITCODE = $LASTEXITCODE
-	# Make sure that Windows and .Net know where we are at all times
-	[Environment]::CurrentDirectory = ( Get-Location -PSProvider FileSystem ).ProviderPath
+$realLASTEXITCODE = $LASTEXITCODE
+# Make sure that Windows and .Net know where we are at all times
+[Environment]::CurrentDirectory = ( Get-Location -PSProvider FileSystem ).ProviderPath
 
-	# Check Running Jobs
-    if ( (Get-Job -State Running).Count -ne 0) { $jobsCount = ( Get-Job -State Running ).Count }
+# Check Running Jobs
+if ( (Get-Job -State Running).Count -ne 0) { $jobsCount = ( Get-Job -State Running ).Count }
 
-    #Set the PowerShell session time, computername and current location in the title bar.
+#Set the PowerShell session time, computername and current location in the title bar.
 
-    #Get start time for the current PowerShell session, $pid is a special variable for the current PowerShell process ID.
-    [datetime]$psStart = ( Get-Process -id $pid ).StartTime
+#Get start time for the current PowerShell session, $pid is a special variable for the current PowerShell process ID.
+[datetime]$psStart = ( Get-Process -id $pid ).StartTime
     
-    #Strip off the millisecond part with Substring(). The millisecond part will come after the last period.
-    $s = (( Get-Date ) - $psStart).ToString()
-    $elapsed = $s.Substring( 0,$s.LastIndexOf( "." )) 
-    if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
-        $title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERDNSDOMAIN,"\",$env:USERNAME,"@",$env:computername," | ",$elapsed
+#Strip off the millisecond part with Substring(). The millisecond part will come after the last period.
+$s = (( Get-Date ) - $psStart).ToString()
+$elapsed = $s.Substring( 0,$s.LastIndexOf( "." )) 
+        if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
+$title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERDNSDOMAIN,"\",$env:USERNAME,"@",$env:computername," | ",$elapsed
     } else {
         $title = "{0}{1}{2}{3}{4}{5}{6}" -f ( Shorten-Path ( Get-Location ).Path )," | ",$env:USERDOMAIN,"@",$env:computername," | ",$elapsed
     }
-    $host.ui.rawui.WindowTitle = $title
+$host.ui.rawui.WindowTitle = $title
 
-    Write-Host "$( ( Get-History -count 1 ).id+1 ) " -NoNewline -ForegroundColor Yellow
+Write-Host "$( ( Get-History -count 1 ).id + 1 ) " -NoNewline -ForegroundColor Yellow
     if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
         Write-Host $env:USERDNSDOMAIN -NoNewline -ForegroundColor DarkCyan
         Write-Host "\" -NoNewline
     }
-    Write-Host "[" -NoNewline
-    Write-Host $env:COMPUTERNAME -NoNewline -ForegroundColor Red
-    Write-Host "]" -NoNewline
-    Write-Host $env:USERNAME -NoNewline -ForegroundColor $color_Host
-    Write-Host " "-n -f $color_decoration
-    Write-Host ( Shorten-Path ( Get-Location ).Path ) -NoNewline -ForegroundColor $color_Location
+Write-Host "[" -NoNewline
+Write-Host $env:COMPUTERNAME -NoNewline -ForegroundColor Red
+Write-Host "]" -NoNewline
+Write-Host $env:USERNAME -NoNewline -ForegroundColor $color_Host
+Write-Host " "-n -f $color_decoration
+Write-Host ( Shorten-Path ( Get-Location ).Path ) -NoNewline -ForegroundColor $color_Location
     
-	if ( Get-Command Write-VcsStatus -EA 0 ) { Write-VcsStatus }
+if ( Get-Command Write-VcsStatus -EA 0 ) { Write-VcsStatus }
 	
-	if ( $NestedPromptLevel -gt 0 ) {
-	$myPrompt = ( " " + "+" * $NestedPromptLevel + ">$jobsCount" )
-    $myPrompt
-    } else { Write-Host " >" -NoNewline ; Write-Host "$jobsCount" -ForegroundColor Red -NoNewline }
-	$global:LASTEXITCODE = $realLASTEXITCODE
-    return " "
+if ( $NestedPromptLevel -gt 0 ) {
+$myPrompt = ( " " + "+" * $NestedPromptLevel + ">$jobsCount" )
+$myPrompt
+} else { Write-Host " >" -NoNewline ; Write-Host "$jobsCount" -ForegroundColor Red -NoNewline }
+$global:LASTEXITCODE = $realLASTEXITCODE
+return " "
 }
 #endregion
 
