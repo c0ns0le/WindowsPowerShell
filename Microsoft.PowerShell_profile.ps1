@@ -289,7 +289,7 @@ switch ( $hive ) {
     "HKEY_CURRENT_CONFIG" { $hive = "HKCC" }
     "HKEY_CLASSES_ROOT" { $hive = "HKCR" }
 }
-Get-ItemProperty -Path ( $hive + ":\" + $partialpath ) -Name $itemName | Select-Object -Property $itemName
+Get-ItemProperty -Path ( $hive + ":\" + $partialpath ) -Name $itemName | Select-Object -ExpandProperty $itemName
 }
 
 if ( $PSVersionTable.PSVersion.Major -ge 5 ) { function Find-PackageGUI { Find-Package | Out-Gridview -PassThru | Install-Package -Verbose } } #For the upcoming WMF 5.0 OneGet feature, hell yee!
