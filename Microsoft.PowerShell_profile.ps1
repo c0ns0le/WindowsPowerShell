@@ -144,10 +144,10 @@ if ( $Host.Name -eq "Windows PowerShell ISE Host" ) {
     Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\ScriptBrowser.dll"
     Add-Type -Path "C:\Program Files (x86)\Microsoft Corporation\Microsoft Script Browser\BestPractices.dll"
     if ( $psISE.CurrentPowerShellTab.VerticalAddOnTools.Name -notcontains "Script Browser" ) {
-        $scriptBrowser = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Browser", [ScriptExplorer.Views.MainView], $true ) }
+        $scriptBrowser = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Browser", [ScriptExplorer.Views.MainView], $false ) }
     if ( $psISE.CurrentPowerShellTab.VerticalAddOnTools.Name -notcontains "Script Analyzer" ) {
-        $scriptAnalyzer = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Analyzer", [BestPractices.Views.BestPracticesView], $true ) }
-    $psISE.CurrentPowerShellTab.VisibleVerticalAddOnTools.SelectedAddOnTool = $scriptBrowser
+        $scriptAnalyzer = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( "Script Analyzer", [BestPractices.Views.BestPracticesView], $false ) }
+    #$psISE.CurrentPowerShellTab.VisibleVerticalAddOnTools.SelectedAddOnTool = $scriptBrowser
 }
 
 }
