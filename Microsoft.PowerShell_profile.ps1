@@ -13,7 +13,7 @@ function Set-ConsoleWindowSize { param(
     [int]$x = $host.ui.rawui.windowsize.width,
     [int]$y = $host.ui.rawui.windowsize.heigth)
     $windowSize = New-Object System.Management.Automation.Host.Size($x,$y)
-    $bufferSize = New-Object System.Management.Automation.Host.Size($x,($y*100))
+    $bufferSize = New-Object System.Management.Automation.Host.Size($x,($y*75))
     $host.ui.rawui.BufferSize = $bufferSize
     $host.ui.rawui.WindowSize = $windowSize
 }
@@ -133,7 +133,7 @@ New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG 
 #region Right-Click: Run with Powershell
 if (( Get-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -EA 0 ).Icon -ne "imageres.dll,73") {
 New-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -Value "imageres.dll,73" -Force
-Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoExit -Command if(( Get-ExecutionPolicy ) -ne `'Bypass`' ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force
+Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoProfile -NoExit -Command if(( Get-ExecutionPolicy ) -ne `'Bypass`' ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force
 }
 #endregion
 
@@ -720,7 +720,7 @@ if ( $host.Name -eq "ConsoleHost" ) {
 $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Set-ConsoleWindowSize -x 120 -y 35
-Set-ConsoleFont 8 }
+Set-ConsoleFont 6 }
 
 if ( $host.name -eq "Windows PowerShell ISE Host" ) {
 
