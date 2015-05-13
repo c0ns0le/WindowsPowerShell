@@ -506,7 +506,8 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
       [Parameter(Mandatory=$true,ValueFromPipeline=$True)][string]$FilePath 
        ) 
        if(-not (test-path $FilePath)) {  
-           throw "FilePath does not exist."   
+           "FilePath does not exist."
+           return  
     } 
     
     function InvokeVerb { 
