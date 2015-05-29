@@ -167,6 +167,7 @@ if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
 #endregion
 
 #region Alias
+
 Set-Alias -Name "im" -Value "Import-Module"
 Set-Alias -Name "wc" -Value "Write-Color"
 Set-Alias -Name "wd" -Value "Write-Debug"
@@ -187,7 +188,7 @@ Set-Alias -Name "cn" -Value "Get-ComputerName"
 Set-Alias -Name "hn" -Value "Get-ComputerName"
 Set-Alias -Name "up" -Value "Update-Profile"
 
-if ( !( Get-Command Resolve-DnsName -EA 0 ) ) { Set-Alias -Name "nslookup" -Value "Prevent-CMDCommands" } else { Set-Alias -Name "nslookup" -Value "Resolve-DnsName"  }
+if ( Get-Command Resolve-DnsName -EA 0 ) { Set-Alias -Name "nslookup" -Value "Prevent-CMDCommands" }
 
 Set-Alias -Name "ping" -Value "Prevent-CMDCommands"
 Set-Alias -Name "hostname" -Value "Prevent-CMDCommands"
@@ -561,11 +562,12 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
 } 
 
 function Set-Workplace {
+$win32_OSVersion = (Get-WmiObject Win32_OperatingSystem).version
+if ((( $win32_OSVersion -split '\.' )[0] -ge 7 ) -and (( $win32_OSVersion -split '\.' )[1] -ge 1 )) {
 
 $myPinnedApplications = "C:\Windows\system32\dsa.msc", "C:\Windows\system32\compmgmt.msc", "C:\Windows\system32\dhcpmgmt.msc", "C:\Windows\system32\dnsmgmt.msc", "C:\Windows\system32\gpmc.msc"
-
 $myPinnedApplications | % { Set-PinnedApplication -Action PintoTaskbar $_ }
-
+}
 }
 
 function Search-File { param(
