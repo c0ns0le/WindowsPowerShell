@@ -9,6 +9,8 @@ if ( !( $env:Path -split ";" | ? { $_ -like "*git\bin" } )) {
 if ( Test-Path D:\Programs\GitPortable\bin\git.exe ) { $env:Path = $env:Path + ";D:\Programs\GitPortable\bin;D:\Programs\GitPortable\cmd" }
 }
 
+#Copy-Item .\.gitconfig--global -Destination "$env:USERPROFILE\.gitconfig" -Force
+
 #region Console
 function Set-ConsoleWindowSize { param(
     [int]$x = $host.ui.rawui.windowsize.width,
