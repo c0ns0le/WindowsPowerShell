@@ -563,7 +563,7 @@ Set-PinnedApplication -Action UnPinFromStartMenu -FilePath "C:\WINDOWS\system32\
 
 function Set-Workplace {
 $win32_OSVersion = (Get-WmiObject Win32_OperatingSystem).version
-if ((( $win32_OSVersion -split '\.' )[0] -ge 7 ) -and (( $win32_OSVersion -split '\.' )[1] -ge 1 )) {
+if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split '\.' )[1] -ge 1 )) {
 
 $myPinnedApplications = "C:\Windows\system32\dsa.msc", "C:\Windows\system32\compmgmt.msc", "C:\Windows\system32\dhcpmgmt.msc", "C:\Windows\system32\dnsmgmt.msc", "C:\Windows\system32\gpmc.msc"
 $myPinnedApplications | % { Set-PinnedApplication -Action PintoTaskbar $_ }
