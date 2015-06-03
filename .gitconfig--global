@@ -6,7 +6,7 @@
 [core]
 	excludesfile = D:\\Documents\\gitignore_global.txt
 	whitespace = trailing-space,space-before-tab
-	autocrlf = true
+	autocrlf = false
 [branch]
 	autosetuprebase = always
 [filter "lfs"]
