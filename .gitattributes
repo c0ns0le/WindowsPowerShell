@@ -1,4 +1,12 @@
-*.ps1 diff
+*.gitignore text eol=crlf
+*.gitattributes text eol=crlf
+
+*.ps1 text eol=crlf
+*.ini text eol=crlf
+*.vbs text eol=crlf
+*.txt text eol=crlf
+*.htm text eol=crlf
+*.html text eol=crlf
 
 # Custom for Visual Studio
 *.cs     diff=csharp
@@ -17,3 +25,4 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
