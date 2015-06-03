@@ -5,7 +5,7 @@
 	helper = wincred
 [core]
 	excludesfile = D:\\Documents\\gitignore_global.txt
-	whitespace = trailing-space,space-before-tab
+	whitespace = trailing-space,space-before-tab,cr-at-eol
 	autocrlf = false
 [branch]
 	autosetuprebase = always
