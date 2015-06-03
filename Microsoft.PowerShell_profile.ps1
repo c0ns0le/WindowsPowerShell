@@ -78,29 +78,29 @@ $consoleFontCode = @"
 "@
 Add-Type -MemberDefinition $consoleFontCode -Name Console -Namespace Win32API | Out-Null
 Remove-Variable consoleFontCode
-$_hmod = [Win32API.Console]::GetModuleHandleA("kernel32") 
+$_hmod = [Win32API.Console]::GetModuleHandleA("kernel32")
 
-"SetConsoleFont", "GetNumberOfConsoleFonts", "GetConsoleFontInfo" | % { 
+"SetConsoleFont", "GetNumberOfConsoleFonts", "GetConsoleFontInfo" | % {
         $param = @() 
         $proc = [Win32API.Console]::GetProcAddress($_hmod, $_) 
-        $delegate = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, "Win32API.Console+$_") 
- 
-        $delegate.Invoke.OverloadDefinitions[0] -match "^[^(]+\((.*)\)" > $null 
-        $argtypes = $Matches[1] -split ", " | ? { $_ } | % { 
-                '[{0}] ${1}' -f ($_ -split " "); 
-                $param += "$" + ($_ -split " ")[-1] 
-            } 
-        $argtypes = $argtypes -join ", " 
-        $param = $param -join ", " 
-        iex @" 
+        $delegate = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, "Win32API.Console+$_")
+        $delegate.Invoke.OverloadDefinitions[0] -match "^[^(]+\((.*)\)" > $null
+        $argtypes = $Matches[1] -split ", " | ? { $_ } | % {
+                '[{0}] ${1}' -f ($_ -split " ")
+                $param += "$" + ($_ -split " ")[-1]
+        }
+        $argtypes = $argtypes -join ", "
+        $param = $param -join ", "
+$expression = @"
             function $_($argtypes){ 
                 `$$_ = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, 'Win32API.Console+$_') 
                 `$$_.Invoke( $param ) 
-            } 
-"@ 
+            }
+"@
+Invoke-Expression $expression
 } 
 
-$STD_OUTPUT_HANDLE = -11 
+$STD_OUTPUT_HANDLE = -11
 $_hConsoleScreen = [Win32API.Console]::GetStdHandle($STD_OUTPUT_HANDLE)
 
 $_DefaultFont = New-Object Win32API.Console+CONSOLE_FONT_INFO
@@ -110,7 +110,8 @@ function Get-ConsoleFontInfo {
     $_FontsNum = GetNumberOfConsoleFonts
     $_ConsoleFonts = New-Object Win32API.Console+CONSOLE_FONT_INFO[] $_FontsNum
     GetConsoleFontInfo $_hConsoleScreen $false $_FontsNum $_ConsoleFonts > $null
-    $_ConsoleFonts | Select-Object @{l="nFont";e={$_ConsoleFonts.Count-$_.nFont-1}}, @{l="dwFontSizeX";e={$_.dwFontSize.X}}, @{l="dwFontSizeY";e={$_.dwFontSize.Y}} | Sort-Object nFont
+    $_ConsoleFonts | Select-Object @{ Label = "nFont" ; Expression = { $_ConsoleFonts.Count-$_.nFont - 1 }},
+    @{ Label = "dwFontSizeX" ; Expression = { $_.dwFontSize.X }}, @{ Label = "dwFontSizeY" ; Expression = { $_.dwFontSize.Y }} | Sort-Object nFont
 }
 
 function Set-ConsoleFont { param(
@@ -137,8 +138,8 @@ New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG 
 
 #region Right-Click: Run with Powershell
 if (( Get-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -EA 0 ).Icon -ne "imageres.dll,73") {
-New-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -Value "imageres.dll,73" -Force
-Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoProfile -NoExit -Command if(( Get-ExecutionPolicy ) -ne `'Bypass`' ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force
+New-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0 -Name "Icon" -Value "imageres.dll,73" -Force | Out-Null
+Set-ItemProperty -Path HKCR:\Microsoft.PowerShellScript.1\Shell\0\Command -Name "(Default)" -Value "`"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoProfile -NoExit -Command if(( Get-ExecutionPolicy ) -ne `'Bypass`' ) { Set-ExecutionPolicy -Scope Process Bypass -Force } ; & '%1'" -Force | Out-Null
 }
 #endregion
 
