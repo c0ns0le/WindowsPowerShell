@@ -10,71 +10,69 @@ if ( Test-Path D:\Programs\GitPortable\bin\git.exe ) { $env:Path = $env:Path + "
 }
 
 #region Git
-function Set-GitConfigGlobal { Copy-Item .\.gitconfig--global -Destination "$env:USERPROFILE\.gitconfig" -Force }
+function Set-GitConfigGlobal { Copy-Item $PSScriptRoot\.gitconfig--global -Destination "$env:USERPROFILE\.gitconfig" -Force }
 #endregion
 
+<#>
 #region Console
 function Set-ConsoleWindowSize { param(
     [int]$x = $host.ui.rawui.windowsize.width,
     [int]$y = $host.ui.rawui.windowsize.heigth)
     $windowSize = New-Object System.Management.Automation.Host.Size($x,$y)
-    $bufferSize = New-Object System.Management.Automation.Host.Size($x,($y*75))
+    $bufferSize = New-Object System.Management.Automation.Host.Size($x,($y*50))
     $host.ui.rawui.BufferSize = $bufferSize
     $host.ui.rawui.WindowSize = $windowSize
 }
 
 $consoleFontCode = @"
-    public delegate bool SetConsoleFont( 
-        IntPtr hWnd, 
-        uint DWORD 
-    ); 
- 
-    public delegate uint GetNumberOfConsoleFonts(); 
- 
-    public delegate bool GetConsoleFontInfo( 
-        IntPtr hWnd, 
-        bool BOOL, 
-        uint DWORD, 
-        [Out] CONSOLE_FONT_INFO[] ConsoleFontInfo 
-    ); 
- 
- 
-    [StructLayout(LayoutKind.Sequential)] 
-    public struct CONSOLE_FONT_INFO 
-    { 
-        public uint nFont; 
-        public COORD dwFontSize; 
-    } 
- 
-    [StructLayout(LayoutKind.Sequential)] 
-    public struct COORD 
-    { 
-        public short X; 
-        public short Y; 
-    } 
- 
-    [DllImport("kernel32.dll")] 
-    public static extern IntPtr GetModuleHandleA( 
-        string module 
-    ); 
- 
-    [DllImport("kernel32", CharSet=CharSet.Ansi, ExactSpelling=true, SetLastError=true)] 
-    public static extern IntPtr GetProcAddress( 
-        IntPtr hModule, 
-        string procName 
-        ); 
- 
-    [DllImport("kernel32.dll", SetLastError = true)] 
-    public static extern IntPtr GetStdHandle( 
-        int nStdHandle 
-        ); 
- 
-    [DllImport("kernel32.dll", SetLastError = true)] 
-    public static extern bool GetCurrentConsoleFont( 
-        IntPtr hConsoleOutput, 
-        bool bMaximumWindow, 
-        out CONSOLE_FONT_INFO lpConsoleCurrentFont 
-        ); 
+public delegate bool SetConsoleFont(
+    IntPtr hWnd,
+    uint DWORD
+);
+
+public delegate uint GetNumberOfConsoleFonts();
+
+public delegate bool GetConsoleFontInfo(
+    IntPtr hWnd,
+    bool BOOL,
+    uint DWORD,
+    [Out] CONSOLE_FONT_INFO[] ConsoleFontInfo
+);
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CONSOLE_FONT_INFO { 
+    public uint nFont;
+    public COORD dwFontSize;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct COORD {
+    public short X;
+    public short Y;
+}
+
+[DllImport("kernel32.dll")]
+public static extern IntPtr GetModuleHandleA(
+    string module
+);
+
+[DllImport("kernel32", CharSet=CharSet.Ansi, ExactSpelling=true, SetLastError=true)]
+public static extern IntPtr GetProcAddress(
+    IntPtr hModule,
+    string procName
+    );
+
+[DllImport("kernel32.dll", SetLastError = true)]
+public static extern IntPtr GetStdHandle(
+    int nStdHandle
+    );
+
+[DllImport("kernel32.dll", SetLastError = true)]
+public static extern bool GetCurrentConsoleFont(
+    IntPtr hConsoleOutput,
+    bool bMaximumWindow,
+    out CONSOLE_FONT_INFO lpConsoleCurrentFont
+    );
 "@
 Add-Type -MemberDefinition $consoleFontCode -Name Console -Namespace Win32API | Out-Null
 Remove-Variable consoleFontCode
@@ -98,7 +96,7 @@ $expression = @"
             }
 "@
 Invoke-Expression $expression
-} 
+}
 
 $STD_OUTPUT_HANDLE = -11
 $_hConsoleScreen = [Win32API.Console]::GetStdHandle($STD_OUTPUT_HANDLE)
@@ -129,8 +127,9 @@ function Reset-ISEColors {
 }
 
 #endregion
+<#>
 
-#region Registry
+#region Create Missing Registry Drives
 New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS -EA 0 | Out-Null
 New-PSDrive -Name HKCR -PSProvider Registry -Root Registry::HKEY_CLASSES_ROOT -EA 0 | Out-Null
 New-PSDrive -Name HKCC -PSProvider Registry -Root Registry::HKEY_CURRENT_CONFIG -EA 0 | Out-Null
@@ -215,7 +214,7 @@ $sdata.trim( ";" )
 
 function Get-ComputerName { Write-Color $env:COMPUTERNAME -ForegroundColor Yellow }
 
-function Get-PersonalFolderPath { param( [switch]$AdminTools,[switch]$ApplicationData,[switch]$CDBurning,[switch]$CommonAdminTools,[switch]$CommonApplicationData,[switch]$CommonDesktopDirectory,[switch]$CommonDocuments,[switch]$CommonMusic,[switch]$CommonOemLinks,[switch]$CommonPictures,[switch]$CommonProgramFiles,[switch]$CommonProgramFilesX86,[switch]$CommonPrograms,[switch]$CommonStartMenu,[switch]$CommonStartup,[switch]$CommonTemplates,[switch]$CommonVideos,[switch]$Cookies,[switch]$Desktop,[switch]$DesktopDirectory,[switch]$Favorites,[switch]$Fonts,[switch]$History,[switch]$InternetCache,[switch]$LocalApplicationData,[switch]$LocalizedResources,[switch]$MyComputer,[switch]$MyDocuments,[switch]$MyMusic,[switch]$MyPictures,[switch]$MyVideos,[switch]$NetworkShortcuts,[switch]$Personal,[switch]$PrinterShortcuts,[switch]$ProgramFiles,[switch]$ProgramFilesX86,[switch]$Programs,[switch]$Recent,[switch]$Resources,[switch]$SendTo,[switch]$StartMenu,[switch]$Startup,[switch]$System,[switch]$SystemX86,[switch]$Templates,[switch]$UserProfile,[switch]$Windows )
+function Get-PersonalFolderPath { param( [switch]$AdminTools,[switch]$ApplicationData,[switch]$CDBurning,[switch]$CommonAdminTools,[switch]$CommonApplicationData,[switch]$CommonDesktopDirectory,[switch]$CommonDocuments,[switch]$CommonMusic,[switch]$CommonOemLinks,[switch]$CommonPictures,[switch]$CommonProgramFiles,[switch]$CommonProgramFilesX86,[switch]$CommonPrograms,[switch]$CommonStartMenu,[switch]$CommonStartup,[switch]$CommonTemplates,[switch]$CommonVideos,[switch]$Cookies,[switch]$Desktop,[switch]$DesktopDirectory,[switch]$Favorites,[switch]$Fonts,[switch]$History,[switch]$InternetCache,[switch]$LocalApplicationData,[switch]$LocalizedResources,[Alias('Documents')][switch]$MyDocuments,[Alias('Music')][switch]$MyMusic,[Alias('Pictures')][switch]$MyPictures,[Alias('Videos')][switch]$MyVideos,[switch]$NetworkShortcuts,[switch]$Personal,[switch]$PrinterShortcuts,[switch]$ProgramFiles,[switch]$ProgramFilesX86,[switch]$Programs,[switch]$Recent,[switch]$Resources,[switch]$SendTo,[switch]$StartMenu,[switch]$Startup,[switch]$System,[switch]$SystemX86,[switch]$Templates,[switch]$UserProfile,[switch]$Windows )
 [array]$params = $PsBoundParameters | % { $_.keys }
 $currentEAP = $ErrorActionPreference
 $ErrorActionPreference = "silentlycontinue"
@@ -324,6 +323,129 @@ function Get-Shortcut {	param( $path = $null )
 
 		New-Object PSObject -Property $info
 	}
+}
+
+function Grant-Elevation {  
+Set-Location ( Get-Item $script:MyInvocation.MyCommand.Path ).Directory
+
+$myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$myWindowsPrincipal = new-object System.Security.Principal.WindowsPrincipal( $myWindowsID )
+$adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+
+if ( !$myWindowsPrincipal.IsInRole( $adminRole )) {
+
+# This fixes error wen script is located at mapped network drive
+$private:scriptFullPath = $script:MyInvocation.MyCommand.Path
+if ( $scriptFullPath.Contains([io.path]::VolumeSeparatorChar )) { # check for a drive letter
+$private:psDrive = Get-PSDrive -Name $scriptFullPath.Substring(0,1) -PSProvider 'FileSystem'
+if ( $psDrive.DisplayRoot ) { # check if it's a mapped network drive
+$scriptFullPath = $scriptFullPath.Replace( $psdrive.Name + [io.path]::VolumeSeparatorChar, $psDrive.DisplayRoot )
+}
+
+}
+[string[]]$argList = @( '-NoLogo', '-NoProfile', '-NoExit', '-File', "`"$scriptFullPath`"" )
+
+$argList += $MyInvocation.BoundParameters.GetEnumerator() | % { "-$( $_.Key )", "$( $_.Value )" }
+$argList += $MyInvocation.UnboundArguments
+
+Start-Process PowerShell.exe -Verb Runas -WorkingDirectory $PWD -ArgumentList $argList -PassThru
+Stop-Process $PID
+}
+}
+
+function Grant-SePrivilege { param(
+  # For granting all types of SePrivilege, maybe I can use it in the future ;)
+  # The privilege to adjust: http://msdn.microsoft.com/en-us/library/bb530716(VS.85).aspx
+  [ValidateSet(
+   "SeAssignPrimaryTokenPrivilege", "SeAuditPrivilege", "SeBackupPrivilege",
+   "SeChangeNotifyPrivilege", "SeCreateGlobalPrivilege", "SeCreatePagefilePrivilege",
+   "SeCreatePermanentPrivilege", "SeCreateSymbolicLinkPrivilege", "SeCreateTokenPrivilege",
+   "SeDebugPrivilege", "SeEnableDelegationPrivilege", "SeImpersonatePrivilege", "SeIncreaseBasePriorityPrivilege",
+   "SeIncreaseQuotaPrivilege", "SeIncreaseWorkingSetPrivilege", "SeLoadDriverPrivilege",
+   "SeLockMemoryPrivilege", "SeMachineAccountPrivilege", "SeManageVolumePrivilege",
+   "SeProfileSingleProcessPrivilege", "SeRelabelPrivilege", "SeRemoteShutdownPrivilege",
+   "SeRestorePrivilege", "SeSecurityPrivilege", "SeShutdownPrivilege", "SeSyncAgentPrivilege",
+   "SeSystemEnvironmentPrivilege", "SeSystemProfilePrivilege", "SeSystemtimePrivilege",
+   "SeTakeOwnershipPrivilege", "SeTcbPrivilege", "SeTimeZonePrivilege", "SeTrustedCredManAccessPrivilege",
+   "SeUndockPrivilege", "SeUnsolicitedInputPrivilege")]
+  $Privilege,
+  # The process on which to adjust the privilege. Defaults to the current process.
+  $ProcessId = $pid,
+  # Switch to disable the privilege, rather than enable it.
+  [Switch] $Disable
+ )
+ 
+ # Taken from P/Invoke.NET with minor adjustments.
+ $definition = @'
+ using System;
+ using System.Runtime.InteropServices;
+  
+ public class AdjPriv
+ {
+  [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
+  internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall,
+   ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
+  
+  [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
+  internal static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);
+  [DllImport("advapi32.dll", SetLastError = true)]
+  internal static extern bool LookupPrivilegeValue(string host, string name, ref long pluid);
+  [StructLayout(LayoutKind.Sequential, Pack = 1)]
+  internal struct TokPriv1Luid
+  {
+   public int Count;
+   public long Luid;
+   public int Attr;
+  }
+  
+  internal const int SE_PRIVILEGE_ENABLED = 0x00000002;
+  internal const int SE_PRIVILEGE_DISABLED = 0x00000000;
+  internal const int TOKEN_QUERY = 0x00000008;
+  internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
+  public static bool EnablePrivilege(long processHandle, string privilege, bool disable)
+  {
+   bool retVal;
+   TokPriv1Luid tp;
+   IntPtr hproc = new IntPtr(processHandle);
+   IntPtr htok = IntPtr.Zero;
+   retVal = OpenProcessToken(hproc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, ref htok);
+   tp.Count = 1;
+   tp.Luid = 0;
+   if(disable)
+   {
+    tp.Attr = SE_PRIVILEGE_DISABLED;
+   }
+   else
+   {
+    tp.Attr = SE_PRIVILEGE_ENABLED;
+   }
+   retVal = LookupPrivilegeValue(null, privilege, ref tp.Luid);
+   retVal = AdjustTokenPrivileges(htok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+   return retVal;
+  }
+ }
+'@
+ 
+ $processHandle = (Get-Process -id $ProcessId).Handle
+ $type = Add-Type $definition -PassThru
+ $type[0]::EnablePrivilege($processHandle, $Privilege, $Disable)
+}
+
+function Grant-SeTakeOwnershipPrivilege {
+# Enable SeTakeOwnershipPrivilege: http://forum.sysinternals.com/tip-easy-way-to-enable-privileges_topic15745.html
+$typeDefinition = @"
+using System;
+using System.Runtime.InteropServices; 
+namespace Win32Api {
+public class NtDll {
+    [DllImport("ntdll.dll", EntryPoint="RtlAdjustPrivilege")]
+    public static extern int RtlAdjustPrivilege(ulong Privilege, bool Enable, bool CurrentThread, ref bool Enabled);
+    }
+}
+"@
+Add-Type -TypeDefinition $typeDefinition -PassThru | Out-Null
+$bEnabled = $false
+[Win32Api.NtDll]::RtlAdjustPrivilege(9, $true, $false, [ref]$bEnabled) | Out-Null
 }
 
 function New-SymLink {
@@ -471,25 +593,6 @@ function Show-Colors { [enum]::GetValues( [ConsoleColor] ) | % { Write-Host $_ -
 function Select-FirstObject { $input | Select-Object -First 1 }
 function Select-LastObject { $input | Select-Object -Last 1 }
 
-function Self-Elevating { param( $args )
-Set-Location ( Get-Item $MyInvocation.MyCommand.Path ).Directory
-
-$myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-$myWindowsPrincipal = new-object System.Security.Principal.WindowsPrincipal( $myWindowsID )
-$adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
-
-if ( !$myWindowsPrincipal.IsInRole( $adminRole )) {
-
-[string[]]$argList = @( '-NoProfile', '-NoExit', '-File', """$( $MyInvocation.MyCommand.Path )""" )
-$argList += $MyInvocation.BoundParameters.GetEnumerator() | % { "-$( $_.Key )", "$( $_.Value )" }
-$argList += $MyInvocation.UnboundArguments
-
-Start-Process PowerShell.exe -Verb Runas -WorkingDirectory $pwd -ArgumentList $argList
-
-exit
-}
-}
-
 function Set-PinnedApplication {
 <#  
 .SYNOPSIS  
@@ -616,7 +719,7 @@ Test-Connection -ComputerName $ComputerName -Count $Count | Select-Object @{ Nam
 }
 
 function Test-FileLock {
-    ## Attempts to open a file and trap the resulting error if the file is already open/locked
+    # Attempts to open a file and trap the resulting error if the file is already open/locked
     param ([string]$filePath )
     $filelocked = $false
     $fileInfo = New-Object System.IO.FileInfo $filePath
@@ -918,6 +1021,137 @@ function Write-Color { param ( $ForegroundColor )
     # restore the original color
     $host.UI.RawUI.ForegroundColor = $fc
 }
+
+function New-DynamicParameter {
+  # .SYNOPSIS
+  #   Create a new dynamic parameter object for use with a dynamicparam block.
+  # .DESCRIPTION
+  #   New-DynamicParameter allows simplified creation of runtime (dynamic) parameters.
+  # .PARAMETER ParameterName
+  #   The name of the parameter to create.
+  # .PARAMETER ParameterType
+  #   The .NET type of this parameter. 
+  # .PARAMETER Mandatory
+  #   Set the mandatory flag for this parameter.
+  # .PARAMETER Position
+  #   Define a position for the parameter.
+  # .PARAMETER ValueFromPipeline
+  #   The parameter can be filled from the input pipeline.
+  # .PARAMETER ValueFromPipelineByPropertyName
+  #   The parameter can be filled from a specific property in the input pipeline.
+  # .PARAMETER ParameterSetName
+  #   Assign the parameter to a specific parameter set.
+  # .PARAMETER ValidateNotNullOrEmpty
+  #   Disallow null or empty values for the parameter if the parameter is specified.
+  # .PARAMETER ValidatePattern
+  #   Test the parameter value using a regular expression.
+  # .PARAMETER ValidatePatternOptions
+  #   Regular expression options which dictate the behaviour of ValidatePattern.
+  # .PARAMETER ValidateRange
+  #   A minimum and maximum value to compare the argument to.
+  # .PARAMETER ValidateScript
+  #   Test the parameter value using a script.
+  # .PARAMETER ValidateSet
+  #   Test the parameter value against a set of values.
+  # .PARAMETER ValidateSetIgnoreCase
+  #   ValidateSet can be configured to be case sensitive by setting this parameter to $false. The default behaviour for ValidateSet ignores case.
+  # .INPUTS
+  #   System.Object
+  #   System.Object[]
+  #   System.String
+  #   System.Type
+  # .OUTPUTS
+  #   System.Management.Automation.RuntimeDefinedParameter
+  # .EXAMPLE
+  #   New-DynamicParameter Name -DefaultValue "Test" -ParameterType "String" -Mandatory -ValidateSet "Test", "Live"
+  # .EXAMPLE
+  #   New-DynamicParameter Name -ValueFromPipelineByPropertyName
+  # .EXAMPLE
+  #   New-DynamicParameter Name -ValidateRange 1, 2
+  # .NOTES
+  #   Author: Chris Dent
+  #
+  #   Change log:
+  #     24/10/2014 - Chris Dent - Added support for ValidatePattern options and ValidateSet case sensitivity.
+  #     22/10/2014 - Chris Dent - First release.
+
+  [CmdLetBinding()]
+  param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [Alias('Name')]
+    [String]$ParameterName,
+    
+    [Object]$DefaultValue,
+    
+    [Type]$ParameterType = "Object",
+
+    [Switch]$Mandatory,
+
+    [Int32]$Position = -2147483648,
+    
+    [Switch]$ValueFromPipeline,
+    
+    [Switch]$ValueFromPipelineByPropertyName,
+    
+    [String]$ParameterSetName = "__AllParameterSets",
+    
+    [Switch]$ValidateNotNullOrEmpty,
+
+    [ValidateNotNullOrEmpty()]
+    [RegEx]$ValidatePattern,
+    
+    [Text.RegularExpressions.RegexOptions]$ValidatePatternOptions = [Text.RegularExpressions.RegexOptions]::IgnoreCase,
+
+    [Object[]]$ValidateRange,
+    
+    [ValidateNotNullOrEmpty()]
+    [ScriptBlock]$ValidateScript,
+   
+    [ValidateNotNullOrEmpty()]
+    [Object[]]$ValidateSet,
+
+    [Boolean]$ValidateSetIgnoreCase = $true
+  )
+  
+  $AttributeCollection = @()
+
+  $ParameterAttribute = New-Object Management.Automation.ParameterAttribute
+  $ParameterAttribute.Mandatory = $Mandatory
+  $ParameterAttribute.Position = $Position
+  $ParameterAttribute.ValueFromPipeline = $ValueFromPipeline
+  $ParameterAttribute.ValueFromPipelineByPropertyName = $ValueFromPipelineByPropertyName
+
+  $AttributeCollection += $ParameterAttribute
+
+  if ($psboundparameters.ContainsKey('ValidateNotNullOrEmpty')) {
+    $AttributeCollection += New-Object Management.Automation.ValidateNotNullOrEmptyAttribute
+  }
+  if ($psboundparameters.ContainsKey('ValidatePattern')) {
+    $ValidatePatternAttribute = New-Object Management.Automation.ValidatePatternAttribute($ValidatePattern.ToString())
+    $ValidatePatternAttribute.Options = $ValidatePatternOptions
+
+    $AttributeCollection += $ValidatePatternAttribute
+  }
+  if ($psboundparameters.ContainsKey('ValidateRange')) {
+    $AttributeCollection += New-Object Management.Automation.ValidateRangeAttribute($ValidateRange)
+  }
+  if ($psboundparameters.ContainsKey('ValidateScript')) {
+    $AttributeCollection += New-Object Management.Automation.ValidateScriptAttribute($ValidateScript)
+  }
+  if ($psboundparameters.ContainsKey('ValidateSet')) {
+    $ValidateSetAttribute = New-Object Management.Automation.ValidateSetAttribute($ValidateSet)
+    $ValidateSetAttribute.IgnoreCase = $ValidateSetIgnoreCase
+
+    $AttributeCollection += $ValidateSetAttribute
+  }
+
+  $Parameter = New-Object Management.Automation.RuntimeDefinedParameter($ParameterName, $ParameterType, $AttributeCollection)
+  if ($psboundparameters.ContainsKey('DefaultValue')) {
+    $Parameter.Value = $DefaultValue
+  }
+  return $Parameter
+}
 #endregion
 
 #region Update-Profile
@@ -993,6 +1227,7 @@ Reload-Profile
 #endregion
 
 #region Info
+
 if ( $host.name -eq "PowerGUIScriptEditorHost" ) {
 return
 }
@@ -1001,15 +1236,16 @@ $color_decoration = [ConsoleColor]::DarkGreen
 $color_Host = [ConsoleColor]::Green
 $color_Location = [ConsoleColor]::Cyan
 
-if ( $host.Name -eq "ConsoleHost" ) {
 
-$Host.UI.RawUI.BackgroundColor = "Black"
-$Host.UI.RawUI.ForegroundColor = "White"
-Set-ConsoleWindowSize -x 120 -y 35
-Set-ConsoleFont 6 }
+if ( $host.Name -eq "ConsoleHost" ) {
+#$Host.UI.RawUI.BackgroundColor = "Black"
+#$Host.UI.RawUI.ForegroundColor = "White"
+#Set-ConsoleWindowSize -x 120 -y 35
+#Set-ConsoleFont 6
+}
 
 if ( $host.name -eq "Windows PowerShell ISE Host" ) {
-
+Reset-ISEColors
 }
 if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { }
 
@@ -1055,6 +1291,7 @@ $systemInfo += [char]0x2518
 #endregion
 
 #region Powershell Prompt
+
 function Shorten-Path { param( [string]$path )
    $location = $path.Replace( $env:USERPROFILE, "~" ) 
    # remove prefix for UNC paths 
@@ -1090,10 +1327,10 @@ $title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path )
 $host.ui.rawui.WindowTitle = $title
 
 Write-Host "$( ( Get-History -count 1 ).id + 1 ) " -NoNewline -ForegroundColor Yellow
-    if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
-        Write-Host $env:USERDNSDOMAIN -NoNewline -ForegroundColor DarkCyan
-        Write-Host "\" -NoNewline
-    }
+if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
+    Write-Host $env:USERDNSDOMAIN -NoNewline -ForegroundColor DarkCyan
+    Write-Host "\" -NoNewline
+}
 Write-Host "[" -NoNewline
 Write-Host $env:COMPUTERNAME -NoNewline -ForegroundColor Red
 Write-Host "]" -NoNewline
