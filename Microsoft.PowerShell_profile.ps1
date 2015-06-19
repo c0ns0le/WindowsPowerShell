@@ -1239,7 +1239,7 @@ $t = $time.ConvertToDateTime( $time.Lastbootuptime )
 $up = "$( $uptime.days )d $( $uptime.hours )h $( $uptime.minutes )m $( $uptime.seconds )s"
 
 #$text = "CPU:" + $cpu + "% Procs:" + $pcount + $diskinfo + ' ' + ( [char]0x25b2 ) + $up + ' ' + ( Get-Date -format g )
-$text = "CPU:{0}% Memory:{6}MB Process:{1} Free C:{2}% {3}{4} {5}" -f $cpu,$pcount,$diskinfo,( [char]0x25b2 ),$up,( Get-Date -format g ),$FreeMem
+$text = "CPU: {0}% Memory: {6}MB Process: {1} Free C: {2}% {3}{4} {5}" -f $cpu,$pcount,$diskinfo,( [char]0x25b2 ),$up,( Get-Date -format g ),$FreeMem
 
 $systemInfo = [char]0x250c
 $systemInfo += ( [char]0x2500 ).ToString() * $text.length
