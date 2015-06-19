@@ -1,6 +1,6 @@
 if ( $PSVersionTable.PSVersion.Major -ge 5 ) { Import-Module PackageManagement }
 if ( $host.Name -eq "ConsoleHost" ) { Import-Module PSReadline -EA 0 }
-if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" | Out-Null ; Import-Module posh-git ; Start-SshAgent -Quiet }
+if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" | Out-Null ; Import-Module posh-git }
 $env:path -split ';' | % { if ( Test-Path "$_\git.exe" ) { Import-Module posh-git ; Start-SshAgent -Quiet }}
 if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
     Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
@@ -117,13 +117,6 @@ function Set-ConsoleFont { param(
 	[IntPtr]$hWnd=$_hConsoleScreen)
     $flag = SetConsoleFont $hWnd $size
     if ( !$flag ) { Get-ConsoleFontInfo ; throw "Illegal font index number. Check correct number using 'Get-ConsoleFontInfo'." }
-}
-
-function Reset-ISEColors {
-	$Host.PrivateData.RestoreDefaults()
-	$Host.PrivateData.RestoreDefaultConsoleTokenColors()
-	$Host.PrivateData.RestoreDefaultTokenColors()
-	$Host.PrivateData.RestoreDefaultXmlTokenColors()
 }
 
 #endregion
@@ -1245,6 +1238,12 @@ if ( $host.Name -eq "ConsoleHost" ) {
 }
 
 if ( $host.name -eq "Windows PowerShell ISE Host" ) {
+function Reset-ISEColors {
+	$Host.PrivateData.RestoreDefaults()
+	$Host.PrivateData.RestoreDefaultConsoleTokenColors()
+	$Host.PrivateData.RestoreDefaultTokenColors()
+	$Host.PrivateData.RestoreDefaultXmlTokenColors()
+}
 Reset-ISEColors
 }
 if ( $host.name -notmatch "Windows PowerShell ISE Host" ) { }
