@@ -40,7 +40,7 @@ public delegate bool GetConsoleFontInfo(
 );
 
 [StructLayout(LayoutKind.Sequential)]
-public struct CONSOLE_FONT_INFO { 
+public struct CONSOLE_FONT_INFO {
     public uint nFont;
     public COORD dwFontSize;
 }
@@ -79,8 +79,8 @@ Remove-Variable consoleFontCode
 $_hmod = [Win32API.Console]::GetModuleHandleA("kernel32")
 
 "SetConsoleFont", "GetNumberOfConsoleFonts", "GetConsoleFontInfo" | % {
-        $param = @() 
-        $proc = [Win32API.Console]::GetProcAddress($_hmod, $_) 
+        $param = @()
+        $proc = [Win32API.Console]::GetProcAddress($_hmod, $_)
         $delegate = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, "Win32API.Console+$_")
         $delegate.Invoke.OverloadDefinitions[0] -match "^[^(]+\((.*)\)" > $null
         $argtypes = $Matches[1] -split ", " | ? { $_ } | % {
@@ -90,9 +90,9 @@ $_hmod = [Win32API.Console]::GetModuleHandleA("kernel32")
         $argtypes = $argtypes -join ", "
         $param = $param -join ", "
 $expression = @"
-            function $_($argtypes){ 
-                `$$_ = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, 'Win32API.Console+$_') 
-                `$$_.Invoke( $param ) 
+            function $_($argtypes){
+                `$$_ = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($proc, 'Win32API.Console+$_')
+                `$$_.Invoke( $param )
             }
 "@
 Invoke-Expression $expression
@@ -150,7 +150,7 @@ if ( $Host.Name -eq 'Windows PowerShell ISE Host' ) {
 
 }
 #endregion Script Browser End
- 
+
 #region Powershell 3 and above specific Default Parameter Values
 if ( $PSVersionTable.PSVersion.Major -ge 3 ) {
     if ( $PSDefaultParameterValues.Keys -notcontains 'Format-Table:Autosize' ) {
@@ -218,7 +218,7 @@ $ErrorActionPreference = $currentEAP
 function Get-IPConfig { param( [Switch]$ip, [Switch]$MAC, [Switch]$all )
 Process {
     If ( $MAC ) { IPConfig.exe -all | Select-String 'IPv4','Physical' }
-    ElseIf ( $ip ) { IPConfig.exe -all | Select-String 'IPv4' } 
+    ElseIf ( $ip ) { IPConfig.exe -all | Select-String 'IPv4' }
     ElseIf ( $all ) { IPConfig.exe -all }
     Else { IPConfig }
     }
@@ -301,7 +301,7 @@ function Get-Shortcut {	param( $path = $null )
 
 		$path = Get-ChildItem $pathUser, $pathCommon -Filter *.lnk -Recurse
 	}
-	$path | % { 
+	$path | % {
 		$link = $obj.CreateShortcut( $_.FullName )
 
 		$info = @{}
@@ -318,7 +318,7 @@ function Get-Shortcut {	param( $path = $null )
 	}
 }
 
-function Grant-Elevation {  
+function Grant-Elevation {
 Set-Location ( Get-Item $script:MyInvocation.MyCommand.Path ).Directory
 
 $myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -367,18 +367,18 @@ $ProcessId = $pid,
 # Switch to disable the privilege, rather than enable it.
 [Switch]$Disable
 )
- 
+
 # Taken from P/Invoke.NET with minor adjustments.
  $definition = @'
  using System;
  using System.Runtime.InteropServices;
-  
+
  public class AdjPriv
  {
   [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
   internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall,
    ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
-  
+
   [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
   internal static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);
   [DllImport("advapi32.dll", SetLastError = true)]
@@ -390,7 +390,7 @@ $ProcessId = $pid,
    public long Luid;
    public int Attr;
   }
-  
+
   internal const int SE_PRIVILEGE_ENABLED = 0x00000002;
   internal const int SE_PRIVILEGE_DISABLED = 0x00000000;
   internal const int TOKEN_QUERY = 0x00000008;
@@ -418,7 +418,7 @@ $ProcessId = $pid,
   }
  }
 '@
- 
+
 $processHandle = ( Get-Process -Id $ProcessId ).Handle
 $type = Add-Type $definition -PassThru
 $type[0]::EnablePrivilege($processHandle, $Privilege, $Disable)
@@ -428,7 +428,7 @@ function Grant-SeTakeOwnershipPrivilege {
 # Enable SeTakeOwnershipPrivilege: http://forum.sysinternals.com/tip-easy-way-to-enable-privileges_topic15745.html
 $typeDefinition = @"
 using System;
-using System.Runtime.InteropServices; 
+using System.Runtime.InteropServices;
 namespace Win32Api {
 public class NtDll {
     [DllImport("ntdll.dll", EntryPoint="RtlAdjustPrivilege")]
@@ -584,26 +584,26 @@ function Select-FirstObject { $args | Select-Object -First 1 }
 function Select-LastObject { $args | Select-Object -Last 1 }
 
 function Set-PinnedApplication {
-<#  
-.SYNOPSIS  
-    This function are used to pin and unpin programs from the taskbar and Start-menu in Windows 7 and Windows Server 2008 R2 
-.DESCRIPTION  
-    The function have to parameteres which are mandatory: 
-    Action: PinToTaskbar, PinToStartMenu, UnPinFromTaskbar, UnPinFromStartMenu 
-    FilePath: The path to the program to perform the action on 
-.EXAMPLE 
-    Set-PinnedApplication -Action PinToTaskbar -FilePath 'C:\WINDOWS\system32\notepad.exe' 
-.EXAMPLE 
-    Set-PinnedApplication -Action UnPinFromTaskbar -FilePath 'C:\WINDOWS\system32\notepad.exe' 
-.EXAMPLE 
-    Set-PinnedApplication -Action PinToStartMenu -FilePath 'C:\WINDOWS\system32\notepad.exe' 
-.EXAMPLE 
-    Set-PinnedApplication -Action UnPinFromStartMenu -FilePath 'C:\WINDOWS\system32\notepad.exe' 
+<#
+.SYNOPSIS
+    This function are used to pin and unpin programs from the taskbar and Start-menu in Windows 7 and Windows Server 2008 R2
+.DESCRIPTION
+    The function have to parameteres which are mandatory:
+    Action: PinToTaskbar, PinToStartMenu, UnPinFromTaskbar, UnPinFromStartMenu
+    FilePath: The path to the program to perform the action on
+.EXAMPLE
+    Set-PinnedApplication -Action PinToTaskbar -FilePath 'C:\WINDOWS\system32\notepad.exe'
+.EXAMPLE
+    Set-PinnedApplication -Action UnPinFromTaskbar -FilePath 'C:\WINDOWS\system32\notepad.exe'
+.EXAMPLE
+    Set-PinnedApplication -Action PinToStartMenu -FilePath 'C:\WINDOWS\system32\notepad.exe'
+.EXAMPLE
+    Set-PinnedApplication -Action UnPinFromStartMenu -FilePath 'C:\WINDOWS\system32\notepad.exe'
 #>
 [CmdletBinding()] param(
-[Parameter(Mandatory=$true)][ValidateSet('PintoStartMenu','UnpinfromStartMenu','PintoTaskbar','UnpinfromTaskbar')][string]$Action, 
-[Parameter(Mandatory=$true,ValueFromPipeline=$True)][string]$FilePath 
-) 
+[Parameter(Mandatory=$true)][ValidateSet('PintoStartMenu','UnpinfromStartMenu','PintoTaskbar','UnpinfromTaskbar')][string]$Action,
+[Parameter(Mandatory=$true,ValueFromPipeline=$True)][string]$FilePath
+)
 if ( !( Test-Path $FilePath )) { 'FilePath does not exist.' ; return }
 
 function InvokeVerb { param( [string]$FilePath,$verb )
@@ -622,12 +622,12 @@ try {
     $null = [CosmosKey.Util.MuiHelper]
 } catch {
     $def = [Text.StringBuilder]""
-    [void]$def.AppendLine('[DllImport("user32.dll")]') 
+    [void]$def.AppendLine('[DllImport("user32.dll")]')
     [void]$def.AppendLine('public static extern int LoadString(IntPtr h,uint id, System.Text.StringBuilder sb,int maxBuffer);')
-    [void]$def.AppendLine('[DllImport("kernel32.dll")]') 
+    [void]$def.AppendLine('[DllImport("kernel32.dll")]')
     [void]$def.AppendLine('public static extern IntPtr LoadLibrary(string s);')
     Add-Type -MemberDefinition $def.ToString() -Name MuiHelper -Namespace CosmosKey.Util
-} 
+}
 if ( $global:CosmosKey_Utils_MuiHelper_Shell32 -eq $null ) { $global:CosmosKey_Utils_MuiHelper_Shell32 = [CosmosKey.Util.MuiHelper]::LoadLibrary('shell32.dll') }
 $maxVerbLength = 255
 $verbBuilder = New-Object Text.StringBuilder '',$maxVerbLength
@@ -637,9 +637,9 @@ return $verbBuilder.ToString()
 
 $verbs = @{
     'PintoStartMenu'=5381
-    'UnpinfromStartMenu'=5382 
-    'PintoTaskbar'=5386 
-    'UnpinfromTaskbar'=5387 
+    'UnpinfromStartMenu'=5382
+    'PintoTaskbar'=5386
+    'UnpinfromTaskbar'=5387
 }
 
 if ( $verbs.$Action -eq $null ) {
@@ -669,7 +669,7 @@ function Search-File { param(
     if ( $detect ) { $dataDirectory += $_ }}
     [array]$dataDirectory | % {
     $path = $_.FullName
-    [System.IO.Directory]::EnumerateFiles($path,$SearchString,[System.IO.SearchOption]::AllDirectories)	
+    [System.IO.Directory]::EnumerateFiles($path,$SearchString,[System.IO.SearchOption]::AllDirectories)
     }
     } catch { $_ }
 }
@@ -998,7 +998,7 @@ function New-DynamicParameter {
    .PARAMETER ParameterName
      The name of the parameter to create.
    .PARAMETER ParameterType
-     The .NET type of this parameter. 
+     The .NET type of this parameter.
    .PARAMETER Mandatory
      Set the mandatory flag for this parameter.
    .PARAMETER Position
@@ -1038,7 +1038,7 @@ function New-DynamicParameter {
      New-DynamicParameter Name -ValidateRange 1, 2
    .NOTES
      Author: Chris Dent
-  
+
      Change log:
        24/10/2014 - Chris Dent - Added support for ValidatePattern options and ValidateSet case sensitivity.
        22/10/2014 - Chris Dent - First release.
@@ -1049,39 +1049,39 @@ function New-DynamicParameter {
     [ValidateNotNullOrEmpty()]
     [Alias('Name')]
     [String]$ParameterName,
-    
+
     [Object]$DefaultValue,
-    
+
     [Type]$ParameterType = "Object",
 
     [Switch]$Mandatory,
 
     [Int32]$Position = -2147483648,
-    
+
     [Switch]$ValueFromPipeline,
-    
+
     [Switch]$ValueFromPipelineByPropertyName,
-    
+
     [String]$ParameterSetName = "__AllParameterSets",
-    
+
     [Switch]$ValidateNotNullOrEmpty,
 
     [ValidateNotNullOrEmpty()]
     [RegEx]$ValidatePattern,
-    
+
     [Text.RegularExpressions.RegexOptions]$ValidatePatternOptions = [Text.RegularExpressions.RegexOptions]::IgnoreCase,
 
     [Object[]]$ValidateRange,
-    
+
     [ValidateNotNullOrEmpty()]
     [ScriptBlock]$ValidateScript,
-   
+
     [ValidateNotNullOrEmpty()]
     [Object[]]$ValidateSet,
 
     [Boolean]$ValidateSetIgnoreCase = $true
   )
-  
+
   $AttributeCollection = @()
 
   $ParameterAttribute = New-Object Management.Automation.ParameterAttribute
@@ -1256,13 +1256,13 @@ $systemInfo += [char]0x2518
 #region Powershell Prompt
 
 function Shorten-Path { param( [string]$path )
-   $location = $path.Replace( $env:USERPROFILE, '~' ) 
-   # remove prefix for UNC paths 
+   $location = $path.Replace( $env:USERPROFILE, '~' )
+   # remove prefix for UNC paths
    $location = $location -replace "^[^:]+::"
    # make path shorter like tabs in Vim,
    # handle paths starting with \\ and . correctly
    # return ( $location -replace "\\( \.? )( [^\\] )[^\\]*( ?=\\ )","\$1$2" )
-   # return standard location 
+   # return standard location
    return $location
 }
 
@@ -1278,10 +1278,10 @@ if (( Get-Job -State Running ).Count -ne 0 ) { $jobsCount = ( Get-Job -State Run
 
 #Get start time for the current PowerShell session, $pid is a special variable for the current PowerShell process ID.
 [datetime]$psStart = ( Get-Process -id $pid ).StartTime
-    
+
 #Strip off the millisecond part with Substring(). The millisecond part will come after the last period.
 $s = (( Get-Date ) - $psStart ).ToString()
-$elapsed = $s.Substring( 0,$s.LastIndexOf('.')) 
+$elapsed = $s.Substring( 0,$s.LastIndexOf('.'))
 
 if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
     $title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path ),' | ',$env:USERDNSDOMAIN,'\',$env:USERNAME,'@',$env:computername,' | ',$elapsed
