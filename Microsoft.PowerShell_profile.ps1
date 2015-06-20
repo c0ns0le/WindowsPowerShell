@@ -146,7 +146,6 @@ if ( $Host.Name -eq 'Windows PowerShell ISE Host' ) {
         $scriptAnalyzer = $psISE.CurrentPowerShellTab.VerticalAddOnTools.Add( 'Script Analyzer', [BestPractices.Views.BestPracticesView], $false ) }
     #$psISE.CurrentPowerShellTab.VisibleVerticalAddOnTools.SelectedAddOnTool = $scriptBrowser
 }
-
 }
 #endregion Script Browser End
 
@@ -187,6 +186,7 @@ if ( Get-Command Resolve-DnsName -EA 0 ) { Set-Alias -Name 'nslookup' -Value 'Pr
 
 Set-Alias -Name 'ping' -Value 'Prevent-CMDCommands'
 Set-Alias -Name 'hostname' -Value 'Prevent-CMDCommands'
+
 #endregion
 
 #region Custom Functions
@@ -199,7 +199,7 @@ Pop-Location
 }
 
 function als { param ( $arg )
-gci $arg | ? { $_.PSIsContainer } | % { $sdata += $_.Fullname + ';' }
+Get-ChildItem $arg | ? { $_.PSIsContainer } | % { $sdata += $_.Fullname + ';' }
 $sdata.trim( ';' )
 }
 
@@ -224,9 +224,9 @@ End { '`r`n' }
 }
 
 function Get-MemberDefinition { param(
-	[Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias('Object')]$InputObject,
+	[Parameter(position=0,Mandatory=$true,ValueFromPipeline=$true)][Alias('Object')]$args,
     [Parameter(position=1)]$Name )
-process { if ( $Name ) { ( $input | Get-Member $Name ).Definition.Replace('), ', ')`n' ) } else { ( $input | Get-Member | Out-Default ) } }
+process { if ( $Name ) { ( $args | Get-Member -Name $Name ).Definition } else { ( $args | Get-Member ) } }
 }
 
 function Get-PersonalFiles { param( [Parameter(position=0,ValueFromPipeline=$true)]$servers )
@@ -257,7 +257,7 @@ if ( Test-Path "\\$ComputerName\c$\Users\$env:USERNAME" ) {
 }
 
 function Get-QCommand {
-	if ( $args[0] -eq $null )	{ Get-Command -PSSnapin Quest.ActiveRoles*
+	if ( $args[0] -eq $null ) { Get-Command -PSSnapin Quest.ActiveRoles*
     } else { Get-Command $args[0] | ? { $_.PSSnapIn -like 'Quest.ActiveRoles*' } }
 }
 
@@ -785,185 +785,167 @@ function Test-Port {
     Checks a range of ports from 1-59 on all servers in the hosts.txt file
 
 #>
-[cmdletbinding(
-    DefaultParameterSetName = '',
-    ConfirmImpact = 'low'
-)]
-    Param(
-        [Parameter(
-            Mandatory = $True,
-            Position = 0,
-            ParameterSetName = '',
-            ValueFromPipeline = $True)]
-            [array]$ComputerName,
-        [Parameter(
-            Position = 1,
-            Mandatory = $True,
-            ParameterSetName = '')]
-            [array]$Port,
-        [Parameter(
-            Mandatory = $False,
-            ParameterSetName = '')]
-            [int]$TCPtimeout=1000,
-        [Parameter(
-            Mandatory = $False,
-            ParameterSetName = '')]
-            [int]$UDPtimeout=1000,
-        [Parameter(
-            Mandatory = $False,
-            ParameterSetName = '')]
-            [switch]$TCP,
-        [Parameter(
-            Mandatory = $False,
-            ParameterSetName = '')]
-            [switch]$UDP
-        )
-    Begin {
-        If (!$tcp -AND !$udp) {$tcp = $True}
-        #Typically you never do this, but in this case I felt it was for the benefit of the function as any errors will be noted in the output of the report
-        $ErrorActionPreference = "SilentlyContinue"
-        $report = @()
-    }
-    Process {
-        ForEach ($c in $ComputerName) {
-            ForEach ($p in $port) {
-                If ($tcp) {
-                    #Create temporary holder
-                    $temp = "" | Select Server, Port, TypePort, Open, Notes
-                    #Create object for connecting to port on ComputerName
-                    $tcpobject = new-Object system.Net.Sockets.TcpClient
-                    #Connect to remote machine's port
-                    $connect = $tcpobject.BeginConnect($c,$p,$null,$null)
-                    #Configure a timeout before quitting
-                    $wait = $connect.AsyncWaitHandle.WaitOne($TCPtimeout,$false)
-                    #If timeout
-                    If(!$wait) {
-                        #Close connection
-                        $tcpobject.Close()
-                        Write-Verbose "Connection Timeout"
-                        #Build report
-                        $temp.Server = $c
-                        $temp.Port = $p
-                        $temp.TypePort = "TCP"
-                        $temp.Open = "False"
-                        $temp.Notes = "Connection to Port Timed Out"
-                    } Else {
-                        $error.Clear()
-                        $tcpobject.EndConnect($connect) | out-Null
-                        #If error
-                        If($error[0]){
-                            #Begin making error more readable in report
-                            [string]$string = ($error[0].exception).message
-                            $message = (($string.split(":")[1]).replace('"',"")).TrimStart()
-                            $failed = $true
-                        }
-                        #Close connection
-                        $tcpobject.Close()
-                        #If unable to query port to due failure
-                        If($failed){
-                            #Build report
-                            $temp.Server = $c
-                            $temp.Port = $p
-                            $temp.TypePort = "TCP"
-                            $temp.Open = "False"
-                            $temp.Notes = "$message"
-                        } Else{
-                            #Build report
-                            $temp.Server = $c
-                            $temp.Port = $p
-                            $temp.TypePort = "TCP"
-                            $temp.Open = "True"
-                            $temp.Notes = ""
-                        }
-                    }
-                    #Reset failed value
-                    $failed = $Null
-                    #Merge temp array with report
-                    $report += $temp
-                }
-                If ($udp) {
-                    #Create temporary holder
-                    $temp = "" | Select Server, Port, TypePort, Open, Notes
-                    #Create object for connecting to port on ComputerName
-                    $udpobject = new-Object system.Net.Sockets.Udpclient
-                    #Set a timeout on receiving message
-                    $udpobject.client.ReceiveTimeout = $UDPTimeout
-                    #Connect to remote machine's port
-                    Write-Verbose "Making UDP connection to remote server"
-                    $udpobject.Connect("$c",$p)
-                    #Sends a message to the host to which you have connected.
-                    Write-Verbose "Sending message to remote host"
-                    $a = new-object system.text.asciiencoding
-                    $byte = $a.GetBytes("$(Get-Date)")
-                    [void]$udpobject.Send($byte,$byte.length)
-                    #IPEndPoint object will allow us to read datagrams sent from any source.
-                    Write-Verbose "Creating remote endpoint"
-                    $remoteendpoint = New-Object system.net.ipendpoint([system.net.ipaddress]::Any,0)
-                    Try {
-                        #Blocks until a message returns on this socket from a remote host.
-                        Write-Verbose "Waiting for message return"
-                        $receivebytes = $udpobject.Receive([ref]$remoteendpoint)
-                        [string]$returndata = $a.GetString($receivebytes)
-                        If ($returndata) {
-                           Write-Verbose "Connection Successful"
-                            #Build report
-                            $temp.Server = $c
-                            $temp.Port = $p
-                            $temp.TypePort = "UDP"
-                            $temp.Open = "True"
-                            $temp.Notes = $returndata
-                            $udpobject.close()
-                        }
-                    } Catch {
-                        If ($Error[0].ToString() -match "\bRespond after a period of time\b") {
-                            #Close connection
-                            $udpobject.Close()
-                            #Make sure that the host is online and not a false positive that it is open
-                            If (Test-Connection -comp $c -count 1 -quiet) {
-                                Write-Verbose "Connection Open"
-                                #Build report
-                                $temp.Server = $c
-                                $temp.Port = $p
-                                $temp.TypePort = "UDP"
-                                $temp.Open = "True"
-                                $temp.Notes = ""
-                            } Else {
-                                <#
-                                It is possible that the host is not online or that the host is online,
-                                but ICMP is blocked by a firewall and this port is actually open.
-                                #>
-                                Write-Verbose "Host maybe unavailable"
-                                #Build report
-                                $temp.Server = $c
-                                $temp.Port = $p
-                                $temp.TypePort = "UDP"
-                                $temp.Open = "False"
-                                $temp.Notes = "Unable to verify if port is open or if host is unavailable."
-                            }
-                        } ElseIf ($Error[0].ToString() -match "forcibly closed by the remote host" ) {
-                            #Close connection
-                            $udpobject.Close()
-                            Write-Verbose "Connection Timeout"
-                            #Build report
-                            $temp.Server = $c
-                            $temp.Port = $p
-                            $temp.TypePort = "UDP"
-                            $temp.Open = "False"
-                            $temp.Notes = "Connection to Port Timed Out"
-                        } Else {
-                            $udpobject.close()
-                        }
-                    }
-                    #Merge temp array with report
-                    $report += $temp
-                }
+[cmdletbinding( DefaultParameterSetName = '', ConfirmImpact = 'low')]
+Param(
+[Parameter(Mandatory = $True, ParameterSetName = '', Position = 0, ValueFromPipeline = $True)]
+[array]$ComputerName,
+[Parameter(Mandatory = $True, ParameterSetName = '', Position = 1)]
+[array]$Port,
+[Parameter(Mandatory = $False, ParameterSetName = '')]
+[int]$TCPtimeout=1000,
+[Parameter(Mandatory = $False, ParameterSetName = '')]
+[int]$UDPtimeout=1000,
+[Parameter(Mandatory = $False, ParameterSetName = '')]
+[switch]$TCP,
+[Parameter(Mandatory = $False, ParameterSetName = '')]
+[switch]$UDP
+)
+Begin {
+If ( !$tcp -and !$udp) { $tcp = $True }
+#Typically you never do this, but in this case I felt it was for the benefit of the function as any errors will be noted in the output of the report
+$ErrorActionPreference = 'SilentlyContinue'
+$report = @()
+}
+Process {
+ForEach ($c in $ComputerName) {
+    ForEach ($p in $port) {
+        If ($tcp) {
+        #Create temporary holder
+        $temp = "" | Select Server, Port, TypePort, Open, Notes
+        #Create object for connecting to port on ComputerName
+        $tcpobject = new-Object system.Net.Sockets.TcpClient
+        #Connect to remote machine's port
+        $connect = $tcpobject.BeginConnect($c,$p,$null,$null)
+        #Configure a timeout before quitting
+        $wait = $connect.AsyncWaitHandle.WaitOne($TCPtimeout,$false)
+        #If timeout
+        If(!$wait) {
+            #Close connection
+            $tcpobject.Close()
+            Write-Verbose "Connection Timeout"
+            #Build report
+            $temp.Server = $c
+            $temp.Port = $p
+            $temp.TypePort = "TCP"
+            $temp.Open = "False"
+            $temp.Notes = "Connection to Port Timed Out"
+        } Else {
+            $error.Clear()
+            $tcpobject.EndConnect($connect) | out-Null
+            #If error
+            If($error[0]){
+                #Begin making error more readable in report
+                [string]$string = ($error[0].exception).message
+                $message = (($string.split(":")[1]).replace('"',"")).TrimStart()
+                $failed = $true
+            }
+            #Close connection
+            $tcpobject.Close()
+            #If unable to query port to due failure
+            If($failed){
+                #Build report
+                $temp.Server = $c
+                $temp.Port = $p
+                $temp.TypePort = "TCP"
+                $temp.Open = "False"
+                $temp.Notes = "$message"
+            } Else{
+                #Build report
+                $temp.Server = $c
+                $temp.Port = $p
+                $temp.TypePort = "TCP"
+                $temp.Open = "True"
+                $temp.Notes = ""
             }
         }
+        #Reset failed value
+        $failed = $Null
+        #Merge temp array with report
+        $report += $temp
+        }
+        If ($udp) {
+        #Create temporary holder
+        $temp = "" | Select Server, Port, TypePort, Open, Notes
+        #Create object for connecting to port on ComputerName
+        $udpobject = new-Object system.Net.Sockets.Udpclient
+        #Set a timeout on receiving message
+        $udpobject.client.ReceiveTimeout = $UDPTimeout
+        #Connect to remote machine's port
+        Write-Verbose "Making UDP connection to remote server"
+        $udpobject.Connect("$c",$p)
+        #Sends a message to the host to which you have connected.
+        Write-Verbose "Sending message to remote host"
+        $a = new-object system.text.asciiencoding
+        $byte = $a.GetBytes("$(Get-Date)")
+        [void]$udpobject.Send($byte,$byte.length)
+        #IPEndPoint object will allow us to read datagrams sent from any source.
+        Write-Verbose "Creating remote endpoint"
+        $remoteendpoint = New-Object system.net.ipendpoint([system.net.ipaddress]::Any,0)
+        Try {
+            #Blocks until a message returns on this socket from a remote host.
+            Write-Verbose "Waiting for message return"
+            $receivebytes = $udpobject.Receive([ref]$remoteendpoint)
+            [string]$returndata = $a.GetString($receivebytes)
+            If ($returndata) {
+                Write-Verbose "Connection Successful"
+                #Build report
+                $temp.Server = $c
+                $temp.Port = $p
+                $temp.TypePort = "UDP"
+                $temp.Open = "True"
+                $temp.Notes = $returndata
+                $udpobject.close()
+            }
+        }
+        Catch {
+            If ($Error[0].ToString() -match "\bRespond after a period of time\b") {
+                #Close connection
+                $udpobject.Close()
+                #Make sure that the host is online and not a false positive that it is open
+                If (Test-Connection -ComputerName $c -Count 1 -Quiet) {
+                    Write-Verbose "Connection Open"
+                    #Build report
+                    $temp.Server = $c
+                    $temp.Port = $p
+                    $temp.TypePort = "UDP"
+                    $temp.Open = "True"
+                    $temp.Notes = ""
+                } Else {
+                    <#
+                    It is possible that the host is not online or that the host is online,
+                    but ICMP is blocked by a firewall and this port is actually open.
+                    #>
+                    Write-Verbose "Host maybe unavailable"
+                    #Build report
+                    $temp.Server = $c
+                    $temp.Port = $p
+                    $temp.TypePort = "UDP"
+                    $temp.Open = "False"
+                    $temp.Notes = "Unable to verify if port is open or if host is unavailable."
+                }
+            } ElseIf ($Error[0].ToString() -match "forcibly closed by the remote host" ) {
+                #Close connection
+                $udpobject.Close()
+                Write-Verbose "Connection Timeout"
+                #Build report
+                $temp.Server = $c
+                $temp.Port = $p
+                $temp.TypePort = "UDP"
+                $temp.Open = "False"
+                $temp.Notes = "Connection to Port Timed Out"
+            } Else {
+                $udpobject.close()
+            }
+        }
+        #Merge temp array with report
+        $report += $temp
+        }
     }
-    End {
-        #Generate Report
-        $report
-    }
+}
+}
+End {
+$report
+}
 }
 
 function Test-RDP { param(
@@ -1178,11 +1160,9 @@ Invoke-WebRequest $urlPSProfile -OutFile $psProfileFullPath | Out-Null
 if (( Get-Item $psISEProfileFullPath -EA 0 ).LinkType -ne 'SymbolicLink' ) { New-SymLink -Path $psProfileFullPath -SymName $psISEProfileFileName -File | Out-Null }
 Reload-Profile
 }
-
 #endregion
 
 #region Info
-
 if ( $host.name -eq 'PowerGUIScriptEditorHost' ) {
 return
 }
@@ -1248,11 +1228,9 @@ $systemInfo += "`n"
 $systemInfo += [char]0x2514
 $systemInfo += ( [char]0x2500 ).ToString() * $text.length
 $systemInfo += [char]0x2518
-
 #endregion
 
 #region Powershell Prompt
-
 function Shorten-Path { param( [string]$path )
    $location = $path.Replace( $env:USERPROFILE, '~' )
    # remove prefix for UNC paths
@@ -1323,7 +1301,7 @@ return ' '
 }
 #endregion
 
-Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell - it's not a shell of you grandpa!"
+Write-Host "Welcome Bartosz, together we will rule the galaxy with an iron fist and Powershell because it's not a shell of you grandpa!"
 Write-Host $systemInfo -ForegroundColor Green
 Write-Host ''
 Set-Location $HOME
