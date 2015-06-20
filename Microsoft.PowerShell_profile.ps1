@@ -513,25 +513,25 @@ Param(
 )
 Begin {
 #Verify user is administrator
-If ( ![bool]((whoami /groups) -match 'S-1-16-12288' )) {
-        Write-Warning 'You must be an Administrator running this under UAC to run this function!'
+$admin = ( New-Object System.Security.principal.windowsprincipal([System.Security.Principal.WindowsIdentity]::GetCurrent()) ).isInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+If ( !$admin ) {
+        Write-Warning 'You must be an Administrator to run this function!'
         Break
     }
 Try {
-        $null = [mklink.symlink]
+    $null = [mklink.symlink]
     } Catch {
 Add-Type @"
-    using System;
-    using System.Runtime.InteropServices;
-
-    namespace mklink
+using System;
+using System.Runtime.InteropServices;
+namespace mklink
+{
+    public class symlink
     {
-        public class symlink
-        {
-            [DllImport("kernel32.dll")]
-            public static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
-        }
+        [DllImport("kernel32.dll")]
+        public static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
     }
+}
 "@
 }
 }
@@ -1282,31 +1282,44 @@ if (( Get-Job -State Running ).Count -ne 0 ) { $jobsCount = ( Get-Job -State Run
 #Strip off the millisecond part with Substring(). The millisecond part will come after the last period.
 $s = (( Get-Date ) - $psStart ).ToString()
 $elapsed = $s.Substring( 0,$s.LastIndexOf('.')) 
-        if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
-$title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path ),' | ',$env:USERDNSDOMAIN,'\',$env:USERNAME,'@',$env:computername,' | ',$elapsed
-    } else {
-        $title = "{0}{1}{2}{3}{4}{5}{6}" -f ( Shorten-Path ( Get-Location ).Path ),' | ',$env:USERDOMAIN,'@',$env:computername,' | ',$elapsed
-    }
-$host.ui.rawui.WindowTitle = $title
+
+if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
+    $title = "{0}{1}{2}{3}{4}{5}{6}{7}{8}" -f ( Shorten-Path ( Get-Location ).Path ),' | ',$env:USERDNSDOMAIN,'\',$env:USERNAME,'@',$env:computername,' | ',$elapsed
+} else {
+    $title = "{0}{1}{2}{3}{4}{5}{6}" -f ( Shorten-Path ( Get-Location ).Path ),' | ',$env:USERDOMAIN,'@',$env:computername,' | ',$elapsed
+}
+
+$admin = ( New-Object System.Security.principal.windowsprincipal([System.Security.Principal.WindowsIdentity]::GetCurrent()) ).isInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+if ( $admin ) { $host.ui.rawui.WindowTitle = 'Administrator: ' + $title } else { $host.ui.rawui.WindowTitle = $title }
 
 Write-Host "$( ( Get-History -count 1 ).Id + 1 )" -NoNewline -ForegroundColor Yellow
+
 if ( $env:COMPUTERNAME -ne $env:USERDOMAIN ) {
     Write-Host $env:USERDNSDOMAIN -NoNewline -ForegroundColor DarkCyan
     Write-Host '\' -NoNewline
 }
+
 Write-Host '[' -NoNewline
 Write-Host $env:COMPUTERNAME -NoNewline -ForegroundColor Red
 Write-Host ']' -NoNewline
 Write-Host $env:USERNAME -NoNewline -ForegroundColor $color_Host
 Write-Host ' '-n -f $color_decoration
+
+if ( $jobsCount ) {
+Write-Host '[' -ForegroundColor White -NoNewline
+Write-Host $jobsCount -ForegroundColor Red -NoNewline
+Write-Host ']' -ForegroundColor White -NoNewline
+Write-Host ' ' -NoNewline
+}
+
 Write-Host ( Shorten-Path ( Get-Location ).Path ) -NoNewline -ForegroundColor $color_Location
-    
+
 if ( Get-Command Write-VcsStatus -EA 0 ) { Write-VcsStatus }
-	
-if ( $NestedPromptLevel -gt 0 ) {
-$myPrompt = ( ' ' + '+' * $NestedPromptLevel + ">$jobsCount" )
-$myPrompt
-} else { Write-Host ' >' -NoNewline ; Write-Host "$jobsCount" -ForegroundColor Red -NoNewline }
+
+Write-Host ' ' -NoNewline
+Write-Host ( '+' * $NestedPromptLevel ) -NoNewline
+Write-Host '>' -NoNewline
+
 $global:LASTEXITCODE = $realLASTEXITCODE
 return ' '
 }
