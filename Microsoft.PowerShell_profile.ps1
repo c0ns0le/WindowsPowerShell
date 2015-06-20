@@ -4,7 +4,6 @@ if ( Test-Path "$env:LOCALAPPDATA\GitHub\shell.ps1" ) { . Resolve-Path "$env:LOC
 $env:path -split ';' | % { if ( Test-Path "$_\git.exe" ) { Import-Module posh-git }}
 if ( Test-Path "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" ) { Add-PSSnapin Quest.ActiveRoles.ADManagement -EA 0
     Update-FormatData -PrependPath "$env:ProgramFiles\Quest Software\Management Shell for AD\Quest.ActiveRoles.ADManagement.Format.ps1xml" }
-
 if ( !( $env:Path -split ';' | ? { $_ -like '*git\bin' } )) {
 if ( Test-Path D:\Programs\GitPortable\bin\git.exe ) { $env:Path = $env:Path + ';D:\Programs\GitPortable\bin;D:\Programs\GitPortable\cmd' }
 }
@@ -169,7 +168,6 @@ Set-Alias -Name 'im' -Value 'Import-Module'
 Set-Alias -Name 'wc' -Value 'Write-Color'
 Set-Alias -Name 'wd' -Value 'Write-Debug'
 Set-Alias -Name 'we' -Value 'Write-Error'
-Set-Alias -Name 'wel' -Value 'Write-EventLog'
 Set-Alias -Name 'wh' -Value 'Write-Host'
 Set-Alias -Name 'wo' -Value 'Write-Output'
 Set-Alias -Name 'wp' -Value 'Write-Progress'
