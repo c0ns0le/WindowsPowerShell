@@ -12,7 +12,6 @@ if ( Test-Path D:\Programs\GitPortable\bin\git.exe ) { $env:Path = $env:Path + '
 function Set-GitConfigGlobal { Copy-Item $PSScriptRoot\.gitconfig--global -Destination "$env:USERPROFILE\.gitconfig" -Force }
 #endregion
 
-<#>
 #region Console
 function Set-ConsoleWindowSize { param(
     [int]$x = $host.ui.rawui.windowsize.width,
@@ -119,7 +118,6 @@ function Set-ConsoleFont { param(
 }
 
 #endregion
-<#>
 
 #region Create Missing Registry Drives
 New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS -EA 0 | Out-Null
@@ -1175,8 +1173,8 @@ $color_Location = [ConsoleColor]::Cyan
 if ( $host.Name -eq 'ConsoleHost' ) {
 #$Host.UI.RawUI.BackgroundColor = "Black"
 #$Host.UI.RawUI.ForegroundColor = "White"
-#Set-ConsoleWindowSize -x 120 -y 35
-#Set-ConsoleFont 6
+Set-ConsoleWindowSize -x 140 -y 35
+Set-ConsoleFont 6
 }
 
 if ( $host.name -eq 'Windows PowerShell ISE Host' ) {
@@ -1188,7 +1186,6 @@ function Reset-ISEColors {
 }
 Reset-ISEColors
 }
-if ( $host.name -notmatch 'Windows PowerShell ISE Host' ) { }
 
 #add global variable if it doesn't already exist
 if ( !($global:LastCheck) ) {
