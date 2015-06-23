@@ -651,6 +651,31 @@ if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split
 $myPinnedApplications = "$env:SystemRoot\system32\dsa.msc", "$env:SystemRoot\system32\compmgmt.msc", "$env:SystemRoot\system32\dhcpmgmt.msc", "$env:SystemRoot\system32\dnsmgmt.msc", "$env:SystemRoot\system32\gpmc.msc"
 $myPinnedApplications | % { Set-PinnedApplication -Action PintoTaskbar $_ }
 }
+if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split '\.' )[1] -eq 1 )) {
+}
+if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split '\.' )[1] -ge 2 )) {
+    if ( !(Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Windows PowerShell")) {
+        New-Item -ItemType Directory -Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Name 'Windows PowerShell' | Out-Null
+
+        $AppLocation = "%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe" 
+        $WshShellPowershell = New-Object -ComObject WScript.Shell
+        $Shortcut = $WshShellPowershell.CreateShortcut("$env:AppData\Microsoft\Windows\Start Menu\Programs\Windows PowerShell\PowerShell.lnk")
+        $shortcut.TargetPath = $AppLocation
+        $shortcut.WindowStyle = 0
+        $shortcut.IconLocation = "powershell.exe, 0"
+        $shortcut.WorkingDirectory = '%HOMEDRIVE%%HOMEPATH%'
+        $Shortcut.Save()
+
+        $AppLocation = "%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell_ise.exe" 
+        $WshShellISE = New-Object -ComObject WScript.Shell
+        $Shortcut = $WshShellISE.CreateShortcut("$env:AppData\Microsoft\Windows\Start Menu\Programs\Windows PowerShell\Windows PowerShell ISE.lnk")
+        $shortcut.TargetPath = $AppLocation
+        $shortcut.WindowStyle = 0
+        $shortcut.IconLocation = "powershell_ise.exe, 0"
+        $shortcut.WorkingDirectory = '%HOMEDRIVE%%HOMEPATH%'
+        $Shortcut.Save()
+    }
+}
 }
 
 function Search-File { param(
