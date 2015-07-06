@@ -649,7 +649,7 @@ $win32_OSVersion = (Get-WmiObject Win32_OperatingSystem).version
 if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split '\.' )[1] -ge 1 )) {
 
 $myPinnedApplications = "$env:SystemRoot\system32\dsa.msc", "$env:SystemRoot\system32\compmgmt.msc", "$env:SystemRoot\system32\dhcpmgmt.msc", "$env:SystemRoot\system32\dnsmgmt.msc", "$env:SystemRoot\system32\gpmc.msc"
-$myPinnedApplications | % { Set-PinnedApplication -Action PintoTaskbar $_ }
+$myPinnedApplications | % { Set-PinnedApplication -Action PintoTaskbar $_ -ErrorAction SilentlyContinue }
 }
 if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split '\.' )[1] -eq 1 )) {
 }
@@ -659,7 +659,7 @@ if ((( $win32_OSVersion -split '\.' )[0] -ge 6 ) -and (( $win32_OSVersion -split
 
         $AppLocation = "%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe" 
         $WshShellPowershell = New-Object -ComObject WScript.Shell
-        $Shortcut = $WshShellPowershell.CreateShortcut("$env:AppData\Microsoft\Windows\Start Menu\Programs\Windows PowerShell\PowerShell.lnk")
+        $Shortcut = $WshShellPowershell.CreateShortcut("$env:AppData\Microsoft\Windows\Start Menu\Programs\Windows PowerShell\Windows PowerShell.lnk")
         $shortcut.TargetPath = $AppLocation
         $shortcut.WindowStyle = 0
         $shortcut.IconLocation = "powershell.exe, 0"
