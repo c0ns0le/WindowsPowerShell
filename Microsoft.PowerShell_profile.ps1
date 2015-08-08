@@ -588,6 +588,9 @@ function Set-PinnedApplication {
     Action: PinToTaskbar, PinToStartMenu, UnPinFromTaskbar, UnPinFromStartMenu
     FilePath: The path to the program to perform the action on
 .EXAMPLE
+    Set-PinnedApplication -Action UnPinFromTaskbar
+    Displays all application which can be Unpined from Taskbar
+.EXAMPLE
     Set-PinnedApplication -Action PinToTaskbar -FilePath 'C:\WINDOWS\system32\notepad.exe'
 .EXAMPLE
     Set-PinnedApplication -Action UnPinFromTaskbar -FilePath 'C:\WINDOWS\system32\notepad.exe'
@@ -597,18 +600,20 @@ function Set-PinnedApplication {
     Set-PinnedApplication -Action UnPinFromStartMenu -FilePath 'C:\WINDOWS\system32\notepad.exe'
 #>
 [CmdletBinding()] param(
-[Parameter(Mandatory=$true)][ValidateSet('PintoStartMenu','UnpinfromStartMenu','PintoTaskbar','UnpinfromTaskbar')][string]$Action,
-[Parameter(Mandatory=$true,ValueFromPipeline=$True)][string]$FilePath
+[Parameter(Mandatory=$false)][ValidateSet('PintoStartMenu','UnpinfromStartMenu','PintoTaskbar','UnpinfromTaskbar')][string]$Action,
+[Parameter(Mandatory=$false,ValueFromPipeline=$True)][string]$FilePath
 )
+if ( $Action -eq '' -or $FilePath -eq '' ) { Get-ChildItem "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar" | Select-Object -ExpandProperty FullName ; break }
+
 if ( !( Test-Path $FilePath )) { 'FilePath does not exist.' ; return }
 
 function InvokeVerb { param( [string]$FilePath,$verb )
-$verb = $verb.Replace('&')
+$verb = $verb -replace '&'
 $path = Split-Path $FilePath
 $shell = New-Object -ComObject 'Shell.Application'
 $folder = $shell.Namespace($path)
 $item = $folder.Parsename(( Split-Path $FilePath -Leaf ))
-$itemVerb = $item.Verbs() | ? { $_.Name.Replace('&') -eq $verb }
+$itemVerb = $item.Verbs() | ? { (( $_.Name ) -replace '&' ) -eq $verb }
 if ( $itemVerb -ne $null ) { $itemVerb.DoIt()
     } else { Write-Verbose "Verb $verb not found." }
 }
